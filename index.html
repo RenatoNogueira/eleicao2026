@@ -1,0 +1,1163 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Eleitoral 2026 — MA & Brasil</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Inter', sans-serif; }
+        :root {
+            --bg-deep: #06080f;
+            --bg-card: #0d1117;
+            --bg-card-hover: #161b22;
+            --border-subtle: #1e2530;
+            --border-hover: #2d3748;
+            --accent-cyan: #00d4ff;
+            --accent-green: #00e676;
+            --accent-amber: #ffc107;
+            --accent-red: #ff5252;
+            --accent-purple: #b388ff;
+            --text-primary: #e6edf3;
+            --text-secondary: #8b949e;
+            --text-muted: #484f58;
+        }
+        body { background: var(--bg-deep); color: var(--text-primary); min-height: 100vh; overflow-x: hidden; }
+        .bg-glow {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0;
+            background:
+                radial-gradient(ellipse 600px 400px at 10% 20%, rgba(0,212,255,0.06), transparent),
+                radial-gradient(ellipse 500px 500px at 90% 60%, rgba(179,136,255,0.05), transparent),
+                radial-gradient(ellipse 400px 300px at 50% 90%, rgba(0,230,118,0.04), transparent);
+        }
+        .glass-card {
+            background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 16px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); position: relative; overflow: hidden;
+        }
+        .glass-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(0,212,255,0.3), transparent);
+            opacity: 0; transition: opacity 0.3s;
+        }
+        .glass-card:hover {
+            border-color: var(--border-hover); background: var(--bg-card-hover);
+            transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+        }
+        .glass-card:hover::before { opacity: 1; }
+        .live-dot {
+            width: 8px; height: 8px; background: var(--accent-green); border-radius: 50%;
+            animation: pulse 2s infinite; display: inline-block;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(0,230,118,0.7); }
+            50% { opacity: 0.7; box-shadow: 0 0 0 6px rgba(0,230,118,0); }
+        }
+        .bar-fill {
+            height: 100%; border-radius: 6px; transition: width 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative; overflow: hidden;
+        }
+        .bar-fill::after {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+            animation: shimmer 2s infinite;
+        }
+        @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+        .counter-num { font-variant-numeric: tabular-nums; font-weight: 800; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--border-hover); }
+        .tab-btn {
+            position: relative; padding: 9px 18px; border-radius: 12px; font-weight: 600;
+            font-size: 0.8rem; color: var(--text-secondary); transition: all 0.3s; cursor: pointer;
+            border: 1px solid transparent; background: transparent; white-space: nowrap;
+        }
+        .tab-btn:hover { color: var(--text-primary); background: rgba(255,255,255,0.04); }
+        .tab-btn.active { color: #fff; background: rgba(0,212,255,0.1); border-color: rgba(0,212,255,0.3); }
+        .fade-in { animation: fadeIn 0.6s ease-out forwards; opacity: 0; }
+        @keyframes fadeIn { to { opacity: 1; } }
+        .delay-1 { animation-delay: 0.1s; }
+        .delay-2 { animation-delay: 0.2s; }
+        .delay-3 { animation-delay: 0.3s; }
+        .delay-4 { animation-delay: 0.4s; }
+        .delay-5 { animation-delay: 0.5s; }
+        .chart-container { position: relative; width: 100%; max-height: 320px; }
+        .chart-container-sm { position: relative; width: 100%; max-height: 260px; }
+        @media (max-width: 640px) { .chart-container { max-height: 260px; } .chart-container-sm { max-height: 220px; } }
+    </style>
+</head>
+<body class="relative">
+    <div class="bg-glow"></div>
+
+    <!-- HEADER -->
+    <header class="relative z-10 border-b border-[#1e2530]">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-extrabold tracking-tight bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+                            Painel Eleitoral 2026
+                        </h1>
+                        <p class="text-xs text-[#484f58] font-medium">Maranhão & Brasil — Pesquisas Mais Recentes</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="flex items-center gap-2 text-xs text-[#8b949e]">
+                        <span class="live-dot"></span>
+                        <span class="font-medium">Atualizado: 29 Set 2026</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- TABS -->
+    <nav class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+        <div class="flex flex-wrap gap-2" id="tabs">
+            <button class="tab-btn active" data-tab="governo">
+                <svg class="w-3.5 h-3.5 inline-block mr-1 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                </svg>
+                Governo MA
+            </button>
+            <button class="tab-btn" data-tab="senado">
+                <svg class="w-3.5 h-3.5 inline-block mr-1 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+                Senado MA
+            </button>
+            <button class="tab-btn" data-tab="deputado-federal">
+                <svg class="w-3.5 h-3.5 inline-block mr-1 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"/>
+                </svg>
+                Dep. Federal
+            </button>
+            <button class="tab-btn" data-tab="deputado-estadual">
+                <svg class="w-3.5 h-3.5 inline-block mr-1 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z"/>
+                </svg>
+                Dep. Estadual
+            </button>
+            <button class="tab-btn" data-tab="presidente">
+                <svg class="w-3.5 h-3.5 inline-block mr-1 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                Presidente
+            </button>
+        </div>
+    </nav>
+
+    <main class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+        <!-- ==================== GOVERNO MA ==================== -->
+        <section id="section-governo" class="tab-content">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <div class="glass-card p-5 fade-in delay-1">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-semibold text-[#8b949e] uppercase tracking-wider">Líder (Quaest)</span>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">PSD</span>
+                    </div>
+                    <p class="text-lg font-bold text-white mb-1">Eduardo Braide</p>
+                    <div class="flex items-end gap-2">
+                        <span class="counter-num text-3xl text-cyan-400" data-target="46">0</span>
+                        <span class="text-sm text-[#8b949e] mb-0.5">%</span>
+                    </div>
+                    <p class="text-[11px] text-[#484f58] mt-2">Quaest — 25/set</p>
+                </div>
+                <div class="glass-card p-5 fade-in delay-2">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-semibold text-[#8b949e] uppercase tracking-wider">2º (IP Sensus)</span>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">MDB</span>
+                    </div>
+                    <p class="text-lg font-bold text-white mb-1">Orleans Brandão</p>
+                    <div class="flex items-end gap-2">
+                        <span class="counter-num text-3xl text-amber-400" data-target="41.1">0</span>
+                        <span class="text-sm text-[#8b949e] mb-0.5">%</span>
+                    </div>
+                    <p class="text-[11px] text-[#484f58] mt-2">IP Sensus — 27/set (votos válidos)</p>
+                </div>
+                <div class="glass-card p-5 fade-in delay-3">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-semibold text-[#8b949e] uppercase tracking-wider">3º (Quaest)</span>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20">PT</span>
+                    </div>
+                    <p class="text-lg font-bold text-white mb-1">Felipe Camarão</p>
+                    <div class="flex items-end gap-2">
+                        <span class="counter-num text-3xl text-red-400" data-target="10">0</span>
+                        <span class="text-sm text-[#8b949e] mb-0.5">%</span>
+                    </div>
+                    <p class="text-[11px] text-[#484f58] mt-2">Quaest — 25/set</p>
+                </div>
+                <div class="glass-card p-5 fade-in delay-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-semibold text-[#8b949e] uppercase tracking-wider">Eleitores</span>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20">MA</span>
+                    </div>
+                    <p class="text-lg font-bold text-white mb-1">Aptos a votar</p>
+                    <div class="flex items-end gap-1">
+                        <span class="counter-num text-3xl text-purple-400" data-target="5186562">0</span>
+                    </div>
+                    <p class="text-[11px] text-[#484f58] mt-2">TSE — 2026</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+                <div class="glass-card p-5 lg:col-span-2 fade-in delay-1">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-sm font-bold text-white">Intenção de Voto — Governo MA (Quaest)</h3>
+                        <span class="text-[10px] text-[#484f58] bg-[#161b22] px-2 py-1 rounded-md border border-[#1e2530]">Estimulada</span>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="chartGoverno"></canvas>
+                    </div>
+                    <p class="text-[10px] text-[#484f58] mt-3">Fonte: Quaest (21–24/set/2026) · n=900 · margem ±3pp · TSE MA-07074/2026</p>
+                </div>
+                <div class="glass-card p-5 fade-in delay-2">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-sm font-bold text-white">IP Sensus — Votos Válidos</h3>
+                        <span class="text-[10px] text-[#484f58] bg-[#161b22] px-2 py-1 rounded-md border border-[#1e2530]">23–27/set</span>
+                    </div>
+                    <div class="space-y-4 mt-2">
+                        <div>
+                            <div class="flex justify-between text-xs mb-1.5">
+                                <span class="text-[#c9d1d9] font-medium">Orleans Brandão</span>
+                                <span class="text-amber-400 font-bold">41,1%</span>
+                            </div>
+                            <div class="h-2 bg-[#161b22] rounded-full overflow-hidden">
+                                <div class="bar-fill bg-gradient-to-r from-amber-500 to-amber-400" style="width: 0%" data-width="41.1%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-xs mb-1.5">
+                                <span class="text-[#c9d1d9] font-medium">Eduardo Braide</span>
+                                <span class="text-cyan-400 font-bold">39,5%</span>
+                            </div>
+                            <div class="h-2 bg-[#161b22] rounded-full overflow-hidden">
+                                <div class="bar-fill bg-gradient-to-r from-cyan-500 to-cyan-400" style="width: 0%" data-width="39.5%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-xs mb-1.5">
+                                <span class="text-[#c9d1d9] font-medium">Felipe Camarão</span>
+                                <span class="text-red-400 font-bold">11,6%</span>
+                            </div>
+                            <div class="h-2 bg-[#161b22] rounded-full overflow-hidden">
+                                <div class="bar-fill bg-gradient-to-r from-red-500 to-red-400" style="width: 0%" data-width="11.6%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-xs mb-1.5">
+                                <span class="text-[#c9d1d9] font-medium">Roberto Rocha</span>
+                                <span class="text-[#8b949e] font-bold">5,4%</span>
+                            </div>
+                            <div class="h-2 bg-[#161b22] rounded-full overflow-hidden">
+                                <div class="bar-fill bg-gradient-to-r from-gray-600 to-gray-500" style="width: 0%" data-width="5.4%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-[10px] text-[#484f58] mt-5">Fonte: IP Sensus · n=1.000 · ±3,1pp · 23–27/set/2026</p>
+                </div>
+            </div>
+
+            <div class="glass-card p-5 fade-in delay-3">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-sm font-bold text-white">Comparativo entre Institutos — Governo MA</h3>
+                    <span class="text-[10px] text-[#484f58] bg-[#161b22] px-2 py-1 rounded-md border border-[#1e2530]">1º Turno</span>
+                </div>
+                <div class="chart-container" style="max-height: 280px;">
+                    <canvas id="chartGovernoComp"></canvas>
+                </div>
+                <div class="flex flex-wrap gap-4 mt-3 text-[10px] text-[#484f58]">
+                    <span>Quaest: 21–24/set/2026 · n=900 · ±3pp</span>
+                    <span>IP Sensus: 23–27/set/2026 · n=1.000 · ±3,1pp (votos válidos)</span>
+                    <span>RealTime BigData: 05–09/set/2026 · n=1.600 · ±2pp</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== SENADO MA ==================== -->
+        <section id="section-senado" class="tab-content hidden">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <div class="glass-card p-5 fade-in delay-1">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-semibold text-[#8b949e] uppercase tracking-wider">1ª Colocada</span>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">MDB</span>
+                    </div>
+                    <p class="text-lg font-bold text-white mb-1">Roseana Sarney</p>
+                    <div class="flex items-end gap-2">
+                        <span class="counter-num text-3xl text-amber-400" data-target="19">0</span>
+                        <span class="text-sm text-[#8b949e] mb-0.5">%</span>
+                    </div>
+                    <p class="text-[11px] text-[#484f58] mt-2">Quaest — 25/set</p>
+                </div>
+                <div class="glass-card p-5 fade-in delay-2">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-semibold text-[#8b949e] uppercase tracking-wider">2ª Colocada</span>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">PP</span>
+                    </div>
+                    <p class="text-lg font-bold text-white mb-1">André Fufuca</p>
+                    <div class="flex items-end gap-2">
+                        <span class="counter-num text-3xl text-blue-400" data-target="15">0</span>
+                        <span class="text-sm text-[#8b949e] mb-0.5">%</span>
+                    </div>
+                    <p class="text-[11px] text-[#484f58] mt-2">Quaest — 25/set</p>
+                </div>
+                <div class="glass-card p-5 fade-in delay-3">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-semibold text-[#8b949e] uppercase tracking-wider">3º Colocado</span>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 border border-green-500/20">Novo</span>
+                    </div>
+                    <p class="text-lg font-bold text-white mb-1">Lahesio Bonfim</p>
+                    <div class="flex items-end gap-2">
+                        <span class="counter-num text-3xl text-green-400" data-target="12">0</span>
+                        <span class="text-sm text-[#8b949e] mb-0.5">%</span>
+                    </div>
+                    <p class="text-[11px] text-[#484f58] mt-2">Quaest — 25/set</p>
+                </div>
+                <div class="glass-card p-5 fade-in delay-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-semibold text-[#8b949e] uppercase tracking-wider">4º Colocado</span>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20">PDT</span>
+                    </div>
+                    <p class="text-lg font-bold text-white mb-1">Weverton Rocha</p>
+                    <div class="flex items-end gap-2">
+                        <span class="counter-num text-3xl text-purple-400" data-target="9">0</span>
+                        <span class="text-sm text-[#8b949e] mb-0.5">%</span>
+                    </div>
+                    <p class="text-[11px] text-[#484f58] mt-2">Quaest — 25/set</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+                <div class="glass-card p-5 fade-in delay-1">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-sm font-bold text-white">Senado MA — 1º Voto (Quaest)</h3>
+                        <span class="text-[10px] text-[#484f58] bg-[#161b22] px-2 py-1 rounded-md border border-[#1e2530]">21–24/set</span>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="chartSenado"></canvas>
+                    </div>
+                    <p class="text-[10px] text-[#484f58] mt-3">n=900 · ±3pp · 1º voto declarado</p>
+                </div>
+                <div class="glass-card p-5 fade-in delay-2">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-sm font-bold text-white">Senado MA — IP Sensus</h3>
+                        <span class="text-[10px] text-[#484f58] bg-[#161b22] px-2 py-1 rounded-md border border-[#1e2530]">14/set</span>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="chartSenadoIP"></canvas>
+                    </div>
+                    <p class="text-[10px] text-[#484f58] mt-3">n=1.000 · ±3,1pp · 10–14/set/2026</p>
+                </div>
+            </div>
+
+            <div class="glass-card p-5 fade-in delay-3">
+                <h3 class="text-sm font-bold text-white mb-4">1º vs 2º Voto — Quaest (Set/2026)</h3>
+                <div class="chart-container" style="max-height: 300px;">
+                    <canvas id="chartSenadoVotos"></canvas>
+                </div>
+                <p class="text-[10px] text-[#484f58] mt-3">Cada eleitor escolhe dois senadores. n=900 · ±3pp · Quaest/TV Mirante</p>
+            </div>
+        </section>
+
+        <!-- ==================== DEPUTADO FEDERAL ==================== -->
+        <section id="section-deputado-federal" class="tab-content hidden">
+            <div class="glass-card p-4 mb-6 fade-in delay-1">
+                <div class="flex items-start gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold text-amber-400 mb-1">Cenário de Lembrança Espontânea</p>
+                        <p class="text-[11px] text-[#8b949e] leading-relaxed">
+                            O Maranhão elege <strong class="text-white">18 deputados federais</strong>. As pesquisas disponíveis medem a <strong class="text-white">lembrança espontânea</strong> (sem apresentação de lista), por isso os percentuais são baixos e a indefinição é alta. A pesquisa INOP (estimulada) apresenta os primeiros colocados com percentuais mais expressivos.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <div class="glass-card p-5 fade-in delay-1">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-semibold text-[#8b949e] uppercase tracking-wider">Líder (Estimulada)</span>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">PSB</span>
+                    </div>
+                    <p class="text-lg font-bold text-white mb-1">Duarte Jr.</p>
+                    <div class="flex items-end gap-2">
+                        <span class="counter-num text-3xl text-blue-400" data-target="6.27">0</span>
+                        <span class="text-sm text-[#8b949e] mb-0.5">%</span>
+                    </div>
+                    <p class="text-[11px] text-[#484f58] mt-2">INOP — Fev/2026</p>
+                </div>
+                <div class="glass-card p-5 fade-in delay-2">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-semibold text-[#8b949e] uppercase tracking-wider">2º (Estimulada)</span>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">PL</span>
+                    </div>
+                    <p class="text-lg font-bold text-white mb-1">Josimar Maranhãozinho</p>
+                    <div class="flex items-end gap-2">
+                        <span class="counter-num text-3xl text-amber-400" data-target="2.56">0</span>
+                        <span class="text-sm text-[#8b949e] mb-0.5">%</span>
+                    </div>
+                    <p class="text-[11px] text-[#484f58] mt-2">INOP — Fev/2026</p>
+                </div>
+                <div class="glass-card p-5 fade-in delay-3">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-semibold text-[#8b949e] uppercase tracking-wider">3º (Estimulada)</span>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20">PT</span>
+                    </div>
+                    <p class="text-lg font-bold text-white mb-1">Detinha</p>
+                    <div class="flex items-end gap-2">
+                        <span class="counter-num text-3xl text-red-400" data-target="2.44">0</span>
+                        <span class="text-sm text-[#8b949e] mb-0.5">%</span>
+                    </div>
+                    <p class="text-[11px] text-[#484f58] mt-2">INOP — Fev/2026</p>
+                </div>
+                <div class="glass-card p-5 fade-in delay-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-semibold text-[#8b949e] uppercase tracking-wider">Vagas na Câmara</span>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20">MA</span>
+                    </div>
+                    <p class="text-lg font-bold text-white mb-1">Deputados federais</p>
+                    <div class="flex items-end gap-1">
+                        <span class="counter-num text-3xl text-purple-400" data-target="18">0</span>
+                    </div>
+                    <p class="text-[11px] text-[#484f58] mt-2">TSE — 2026</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+                <div class="glass-card p-5 fade-in delay-1">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-sm font-bold text-white">Dep. Federal — Estimulada (INOP)</h3>
+                        <span class="text-[10px] text-[#484f58] bg-[#161b22] px-2 py-1 rounded-md border border-[#1e2530]">Fev/2026</span>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="chartDepFedINOP"></canvas>
+                    </div>
+                    <p class="text-[10px] text-[#484f58] mt-3">n=2.502 · ±2pp · 18–28/jan/2026 · 57 municípios · TSE MA-02561/2026</p>
+                </div>
+                <div class="glass-card p-5 fade-in delay-2">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-sm font-bold text-white">Dep. Federal — Espontânea (IPPI)</h3>
+                        <span class="text-[10px] text-[#484f58] bg-[#161b22] px-2 py-1 rounded-md border border-[#1e2530]">Set/2026</span>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="chartDepFedIPPI"></canvas>
+                    </div>
+                    <p class="text-[10px] text-[#484f58] mt-3">n=1.500 · ±2,5pp · 29/ago–02/set/2026 · TSE MA-08868/2026</p>
+                </div>
+            </div>
+
+            <div class="glass-card p-5 fade-in delay-3">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-sm font-bold text-white">Evolução — Top 5 Dep. Federal (Estimulada vs Espontânea)</h3>
+                    <span class="text-[10px] text-[#484f58] bg-[#161b22] px-2 py-1 rounded-md border border-[#1e2530]">Comparativo</span>
+                </div>
+                <div class="chart-container" style="max-height: 300px;">
+                    <canvas id="chartDepFedComp"></canvas>
+                </div>
+                <p class="text-[10px] text-[#484f58] mt-3">Comparação entre pesquisa estimulada (INOP/Fev) e espontânea (IPPI/Set). A diferença metodológica explica a variação percentual.</p>
+            </div>
+        </section>
+
+        <!-- ==================== DEPUTADO ESTADUAL ==================== -->
+        <section id="section-deputado-estadual" class="tab-content hidden">
+            <div class="glass-card p-4 mb-6 fade-in delay-1">
+                <div class="flex items-start gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold text-amber-400 mb-1">Disputa Totalmente Aberta</p>
+                        <p class="text-[11px] text-[#8b949e] leading-relaxed">
+                            A Assembleia Legislativa do Maranhão tem <strong class="text-white">42 cadeiras</strong>. Pesquisas recentes mostram que <strong class="text-white">82,8% dos eleitores</strong> ainda não sabem em quem votar. Mesmo com 99 nomes mencionados, nenhum candidato alcançou 1% das intenções espontâneas, segundo o IPPI (jul/2026).
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <div class="glass-card p-5 fade-in delay-1">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-semibold text-[#8b949e] uppercase tracking-wider">1º em São Luís</span>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">PSD</span>
+                    </div>
+                    <p class="text-lg font-bold text-white mb-1">Neto Evangelista</p>
+                    <div class="flex items-end gap-2">
+                        <span class="counter-num text-3xl text-cyan-400" data-target="2">0</span>
+                        <span class="text-sm text-[#8b949e] mb-0.5">%</span>
+                    </div>
+                    <p class="text-[11px] text-[#484f58] mt-2">Farol Pesquisas — Nov/2025</p>
+                </div>
+                <div class="glass-card p-5 fade-in delay-2">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-semibold text-[#8b949e] uppercase tracking-wider">2º em São Luís</span>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">União</span>
+                    </div>
+                    <p class="text-lg font-bold text-white mb-1">Wellington do Curso</p>
+                    <div class="flex items-end gap-2">
+                        <span class="counter-num text-3xl text-amber-400" data-target="1">0</span>
+                        <span class="text-sm text-[#8b949e] mb-0.5">%</span>
+                    </div>
+                    <p class="text-[11px] text-[#484f58] mt-2">Farol Pesquisas — Nov/2025</p>
+                </div>
+                <div class="glass-card p-5 fade-in delay-3">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-semibold text-[#8b949e] uppercase tracking-wider">1º Estadual (IPPI)</span>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 border border-green-500/20">—</span>
+                    </div>
+                    <p class="text-lg font-bold text-white mb-1">Maedja Campos</p>
+                    <div class="flex items-end gap-2">
+                        <span class="counter-num text-3xl text-green-400" data-target="1">0</span>
+                        <span class="text-sm text-[#8b949e] mb-0.5">%</span>
+                    </div>
+                    <p class="text-[11px] text-[#484f58] mt-2">IPPI — Jul/2026</p>
+                </div>
+                <div class="glass-card p-5 fade-in delay-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-semibold text-[#8b949e] uppercase tracking-wider">Indefinidos</span>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20">MA</span>
+                    </div>
+                    <p class="text-lg font-bold text-white mb-1">Não sabem votar</p>
+                    <div class="flex items-end gap-1">
+                        <span class="counter-num text-3xl text-red-400" data-target="83">0</span>
+                        <span class="text-sm text-[#8b949e] mb-0.5">%</span>
+                    </div>
+                    <p class="text-[11px] text-[#484f58] mt-2">IPPI — Jul/2026</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+                <div class="glass-card p-5 fade-in delay-1">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-sm font-bold text-white">Dep. Estadual — Espontânea (IPPI)</h3>
+                        <span class="text-[10px] text-[#484f58] bg-[#161b22] px-2 py-1 rounded-md border border-[#1e2530]">Jul/2026</span>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="chartDepEstIPPI"></canvas>
+                    </div>
+                    <p class="text-[10px] text-[#484f58] mt-3">n=1.500 · ±2,5pp · 08–12/jul/2026 · 80 municípios · TSE MA-09885/2026</p>
+                </div>
+                <div class="glass-card p-5 fade-in delay-2">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-sm font-bold text-white">Dep. Estadual — São Luís (Farol)</h3>
+                        <span class="text-[10px] text-[#484f58] bg-[#161b22] px-2 py-1 rounded-md border border-[#1e2530]">Nov/2025</span>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="chartDepEstFarol"></canvas>
+                    </div>
+                    <p class="text-[10px] text-[#484f58] mt-3">n=876 · ±3,3pp · 15–18/nov/2025 · São Luís apenas</p>
+                </div>
+            </div>
+
+            <div class="glass-card p-5 fade-in delay-3">
+                <h3 class="text-sm font-bold text-white mb-4">Indefinição do Eleitorado — Dep. Estadual</h3>
+                <div class="chart-container-sm">
+                    <canvas id="chartDepEstIndef"></canvas>
+                </div>
+                <p class="text-[10px] text-[#484f58] mt-3">Dados: IPPI (Jul/2026) e Farol Pesquisas (Nov/2025). A eleição proporcional depende do quociente eleitoral e do desempenho partidário, não apenas da votação individual.</p>
+            </div>
+        </section>
+
+        <!-- ==================== PRESIDENTE ==================== -->
+        <section id="section-presidente" class="tab-content hidden">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <div class="glass-card p-5 fade-in delay-1">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-semibold text-[#8b949e] uppercase tracking-wider">1º Turno — Líder (Quaest)</span>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20">PT</span>
+                    </div>
+                    <p class="text-lg font-bold text-white mb-1">Lula</p>
+                    <div class="flex items-end gap-2">
+                        <span class="counter-num text-3xl text-red-400" data-target="39">0</span>
+                        <span class="text-sm text-[#8b949e] mb-0.5">%</span>
+                    </div>
+                    <p class="text-[11px] text-[#484f58] mt-2">Quaest — 28/set</p>
+                </div>
+                <div class="glass-card p-5 fade-in delay-2">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-semibold text-[#8b949e] uppercase tracking-wider">1º Turno — 2º (Quaest)</span>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">PL</span>
+                    </div>
+                    <p class="text-lg font-bold text-white mb-1">Flávio Bolsonaro</p>
+                    <div class="flex items-end gap-2">
+                        <span class="counter-num text-3xl text-blue-400" data-target="34">0</span>
+                        <span class="text-sm text-[#8b949e] mb-0.5">%</span>
+                    </div>
+                    <p class="text-[11px] text-[#484f58] mt-2">Quaest — 28/set</p>
+                </div>
+                <div class="glass-card p-5 fade-in delay-3">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-semibold text-[#8b949e] uppercase tracking-wider">2º Turno — Lula</span>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 border border-green-500/20">Empate</span>
+                    </div>
+                    <p class="text-lg font-bold text-white mb-1">Lula</p>
+                    <div class="flex items-end gap-2">
+                        <span class="counter-num text-3xl text-green-400" data-target="42">0</span>
+                        <span class="text-sm text-[#8b949e] mb-0.5">%</span>
+                    </div>
+                    <p class="text-[11px] text-[#484f58] mt-2">Quaest — 28/set</p>
+                </div>
+                <div class="glass-card p-5 fade-in delay-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-semibold text-[#8b949e] uppercase tracking-wider">2º Turno — Flávio</span>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">Empate</span>
+                    </div>
+                    <p class="text-lg font-bold text-white mb-1">Flávio Bolsonaro</p>
+                    <div class="flex items-end gap-2">
+                        <span class="counter-num text-3xl text-amber-400" data-target="42">0</span>
+                        <span class="text-sm text-[#8b949e] mb-0.5">%</span>
+                    </div>
+                    <p class="text-[11px] text-[#484f58] mt-2">Quaest — 28/set</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+                <div class="glass-card p-5 fade-in delay-1">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-sm font-bold text-white">1º Turno — Presidente (Quaest vs Datafolha)</h3>
+                        <span class="text-[10px] text-[#484f58] bg-[#161b22] px-2 py-1 rounded-md border border-[#1e2530]">Set/2026</span>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="chartPresidente1T"></canvas>
+                    </div>
+                    <p class="text-[10px] text-[#484f58] mt-3">Quaest (28/set): n=2.004 · ±2pp · Datafolha (24/set): n=2.004 · ±2pp</p>
+                </div>
+                <div class="glass-card p-5 fade-in delay-2">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-sm font-bold text-white">2º Turno — Lula vs Flávio</h3>
+                        <span class="text-[10px] text-[#484f58] bg-[#161b22] px-2 py-1 rounded-md border border-[#1e2530]">Quaest vs Datafolha</span>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="chartPresidente2T"></canvas>
+                    </div>
+                    <p class="text-[10px] text-[#484f58] mt-3">Quaest (28/set): empate em 42% · Datafolha (24/set): Lula 47% x Flávio 45%</p>
+                </div>
+            </div>
+
+            <div class="glass-card p-5 fade-in delay-3">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-sm font-bold text-white">Evolução — 2º Turno (Setembro 2026)</h3>
+                    <span class="text-[10px] text-[#484f58] bg-[#161b22] px-2 py-1 rounded-md border border-[#1e2530]">Linha do Tempo</span>
+                </div>
+                <div class="chart-container" style="max-height: 300px;">
+                    <canvas id="chartEvolucao"></canvas>
+                </div>
+                <p class="text-[10px] text-[#484f58] mt-3">Cada ponto representa uma pesquisa divulgada na data indicada. Datafolha (24/set) e Quaest (28/set) são as mais recentes.</p>
+            </div>
+
+            <div class="glass-card p-5 mt-4 fade-in delay-4">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-sm font-bold text-white">Maranhão — Lula vs Flávio (Quaest)</h3>
+                    <span class="text-[10px] text-[#484f58] bg-[#161b22] px-2 py-1 rounded-md border border-[#1e2530]">Ago/2026</span>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="text-center p-4 rounded-xl bg-red-500/5 border border-red-500/10">
+                        <p class="text-xs text-[#8b949e] mb-2">Lula (PT)</p>
+                        <span class="counter-num text-4xl text-red-400" data-target="59">0</span>
+                        <span class="text-lg text-red-400">%</span>
+                    </div>
+                    <div class="text-center p-4 rounded-xl bg-blue-500/5 border border-blue-500/10">
+                        <p class="text-xs text-[#8b949e] mb-2">Flávio Bolsonaro (PL)</p>
+                        <span class="counter-num text-4xl text-blue-400" data-target="22">0</span>
+                        <span class="text-lg text-blue-400">%</span>
+                    </div>
+                </div>
+                <p class="text-[10px] text-[#484f58] mt-3">Quaest · n=900 · ±3pp · 20–23/ago/2026</p>
+            </div>
+        </section>
+
+        <footer class="mt-10 pb-8 border-t border-[#1e2530] pt-6">
+            <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+                <p class="text-[11px] text-[#484f58]">
+                    Dados compilados de pesquisas registradas no TSE. Este painel não constitui pesquisa eleitoral.
+                </p>
+                <div class="flex items-center gap-3 text-[10px] text-[#484f58]">
+                    <span>Fontes: Quaest, Datafolha, IP Sensus, RealTime BigData, INOP, IPPI, Farol</span>
+                </div>
+            </div>
+        </footer>
+    </main>
+
+    <script>
+    // ==================== TAB SYSTEM ====================
+    const tabs = document.querySelectorAll('.tab-btn');
+    const sections = {
+        governo: document.getElementById('section-governo'),
+        senado: document.getElementById('section-senado'),
+        'deputado-federal': document.getElementById('section-deputado-federal'),
+        'deputado-estadual': document.getElementById('section-deputado-estadual'),
+        presidente: document.getElementById('section-presidente')
+    };
+
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            tabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            Object.values(sections).forEach(s => s.classList.add('hidden'));
+            const target = sections[tab.dataset.tab];
+            target.classList.remove('hidden');
+            target.querySelectorAll('.fade-in').forEach(el => {
+                el.style.animation = 'none'; el.offsetHeight; el.style.animation = '';
+            });
+            target.querySelectorAll('.bar-fill').forEach(el => {
+                const w = el.dataset.width;
+                el.style.width = '0%';
+                setTimeout(() => el.style.width = w, 100);
+            });
+            target.querySelectorAll('.counter-num').forEach(el => animateCounter(el));
+        });
+    });
+
+    // ==================== COUNTER ANIMATION ====================
+    function animateCounter(el) {
+        const target = parseFloat(el.dataset.target);
+        const isDecimal = el.dataset.target.includes('.');
+        const duration = 1200;
+        const start = performance.now();
+        const startVal = 0;
+        function update(now) {
+            const elapsed = now - start;
+            const progress = Math.min(elapsed / duration, 1);
+            const eased = 1 - Math.pow(1 - progress, 3);
+            const current = startVal + (target - startVal) * eased;
+            if (target >= 1000000) {
+                el.textContent = (current / 1000000).toFixed(1) + 'M';
+            } else if (target >= 10000) {
+                el.textContent = Math.floor(current).toLocaleString('pt-BR');
+            } else if (isDecimal) {
+                el.textContent = current.toFixed(1);
+            } else {
+                el.textContent = Math.floor(current);
+            }
+            if (progress < 1) requestAnimationFrame(update);
+            else {
+                if (target >= 1000000) el.textContent = (target / 1000000).toFixed(1) + 'M';
+                else if (target >= 10000) el.textContent = Math.floor(target).toLocaleString('pt-BR');
+                else if (isDecimal) el.textContent = target.toFixed(1);
+                else el.textContent = Math.floor(target);
+            }
+        }
+        requestAnimationFrame(update);
+    }
+    document.querySelectorAll('.counter-num').forEach(el => animateCounter(el));
+    setTimeout(() => {
+        document.querySelectorAll('.bar-fill').forEach(el => { el.style.width = el.dataset.width; });
+    }, 300);
+
+    // ==================== CHART DEFAULTS ====================
+    Chart.defaults.color = '#8b949e';
+    Chart.defaults.borderColor = '#1e2530';
+    Chart.defaults.font.family = 'Inter';
+    Chart.defaults.font.size = 11;
+    Chart.defaults.plugins.legend.labels.usePointStyle = true;
+    Chart.defaults.plugins.legend.labels.pointStyle = 'circle';
+    Chart.defaults.plugins.legend.labels.padding = 16;
+    Chart.defaults.plugins.legend.labels.font = { size: 11, weight: '500' };
+    Chart.defaults.plugins.tooltip.backgroundColor = '#161b22';
+    Chart.defaults.plugins.tooltip.borderColor = '#2d3748';
+    Chart.defaults.plugins.tooltip.borderWidth = 1;
+    Chart.defaults.plugins.tooltip.padding = 12;
+    Chart.defaults.plugins.tooltip.cornerRadius = 8;
+    Chart.defaults.plugins.tooltip.titleFont = { size: 12, weight: '700' };
+    Chart.defaults.plugins.tooltip.bodyFont = { size: 11 };
+
+    // ==================== GOVERNO CHART (Quaest) ====================
+    new Chart(document.getElementById('chartGoverno'), {
+        type: 'bar',
+        data: {
+            labels: ['Eduardo Braide', 'Orleans Brandão', 'Felipe Camarão', 'Roberto Rocha', 'André Luis'],
+            datasets: [{
+                label: 'Intenção de Voto (%)',
+                data: [46, 27, 10, 5, 1],
+                backgroundColor: ['rgba(0,212,255,0.7)', 'rgba(255,193,7,0.7)', 'rgba(255,82,82,0.7)', 'rgba(139,148,158,0.5)', 'rgba(139,148,158,0.4)'],
+                borderColor: ['#00d4ff', '#ffc107', '#ff5252', '#8b949e', '#8b949e'],
+                borderWidth: 1.5, borderRadius: 8, barThickness: 24, categoryPercentage: 0.8, barPercentage: 0.85
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+            layout: { padding: { left: 20, right: 30, top: 10, bottom: 10 } },
+            plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${ctx.raw}%` } } },
+            scales: {
+                x: { grid: { color: 'rgba(30,37,48,0.5)' }, ticks: { callback: v => v + '%', stepSize: 10, padding: 8 }, max: 50 },
+                y: { grid: { display: false }, ticks: { font: { size: 11, weight: '500' }, crossAlign: 'far', padding: 12 } }
+            }
+        }
+    });
+
+    // ==================== GOVERNO COMPARATIVO ====================
+    new Chart(document.getElementById('chartGovernoComp'), {
+        type: 'bar',
+        data: {
+            labels: ['Braide (PSD)', 'Orleans (MDB)', 'Camarão (PT)', 'Rocha (PRTB)'],
+            datasets: [
+                { label: 'Quaest (Set)', data: [46, 27, 10, 5], backgroundColor: 'rgba(0,212,255,0.6)', borderColor: '#00d4ff', borderWidth: 1.5, borderRadius: 6, barPercentage: 0.7 },
+                { label: 'IP Sensus (Votos Válidos)', data: [39.5, 41.1, 11.6, 5.4], backgroundColor: 'rgba(255,193,7,0.6)', borderColor: '#ffc107', borderWidth: 1.5, borderRadius: 6, barPercentage: 0.7 },
+                { label: 'RealTime (Set)', data: [45, 32, 11, 5], backgroundColor: 'rgba(179,136,255,0.6)', borderColor: '#b388ff', borderWidth: 1.5, borderRadius: 6, barPercentage: 0.7 }
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { position: 'top' }, tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.raw}%` } } },
+            scales: { y: { grid: { color: 'rgba(30,37,48,0.5)' }, ticks: { callback: v => v + '%' }, max: 50 }, x: { grid: { display: false } } }
+        }
+    });
+
+    // ==================== SENADO CHART (Quaest) ====================
+    new Chart(document.getElementById('chartSenado'), {
+        type: 'bar',
+        data: {
+            labels: ['Roseana (MDB)', 'Fufuca (PP)', 'Lahesio (Novo)', 'Weverton (PDT)', 'Eliziane (PT)', 'Dr. Hilton (Mobiliza)', 'Cidônio (PL)'],
+            datasets: [{
+                label: 'Intenção de Voto (%)',
+                data: [19, 15, 12, 9, 8, 3, 2],
+                backgroundColor: ['rgba(255,193,7,0.7)', 'rgba(59,130,246,0.7)', 'rgba(0,230,118,0.7)', 'rgba(179,136,255,0.7)', 'rgba(255,82,82,0.7)', 'rgba(255,152,0,0.6)', 'rgba(139,148,158,0.5)'],
+                borderColor: ['#ffc107', '#3b82f6', '#00e676', '#b388ff', '#ff5252', '#ff9800', '#8b949e'],
+                borderWidth: 1.5, borderRadius: 8, barThickness: 22, categoryPercentage: 0.8, barPercentage: 0.85
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+            layout: { padding: { left: 20, right: 30, top: 10, bottom: 10 } },
+            plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${ctx.raw}%` } } },
+            scales: {
+                x: { grid: { color: 'rgba(30,37,48,0.5)' }, ticks: { callback: v => v + '%', padding: 8 }, max: 24 },
+                y: { grid: { display: false }, ticks: { font: { size: 10, weight: '500' }, crossAlign: 'far', padding: 10 } }
+            }
+        }
+    });
+
+    // ==================== SENADO IP SENSUS ====================
+    new Chart(document.getElementById('chartSenadoIP'), {
+        type: 'bar',
+        data: {
+            labels: ['Roseana (MDB)', 'Fufuca (PP)', 'Weverton (PDT)', 'Lahesio (Novo)', 'Eliziane (PT)', 'Dr. Hilton (Mobiliza)'],
+            datasets: [{
+                label: 'Intenção de Voto (%)',
+                data: [20.8, 16.4, 12.3, 10.5, 8.2, 3.1],
+                backgroundColor: ['rgba(255,193,7,0.6)', 'rgba(59,130,246,0.6)', 'rgba(179,136,255,0.6)', 'rgba(0,230,118,0.6)', 'rgba(255,82,82,0.6)', 'rgba(255,152,0,0.5)'],
+                borderColor: ['#ffc107', '#3b82f6', '#b388ff', '#00e676', '#ff5252', '#ff9800'],
+                borderWidth: 1.5, borderRadius: 8, barThickness: 22, categoryPercentage: 0.8, barPercentage: 0.85
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+            layout: { padding: { left: 20, right: 30, top: 10, bottom: 10 } },
+            plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${ctx.raw}%` } } },
+            scales: {
+                x: { grid: { color: 'rgba(30,37,48,0.5)' }, ticks: { callback: v => v + '%', padding: 8 }, max: 24 },
+                y: { grid: { display: false }, ticks: { font: { size: 10, weight: '500' }, crossAlign: 'far', padding: 10 } }
+            }
+        }
+    });
+
+    // ==================== SENADO 1º vs 2º VOTO ====================
+    new Chart(document.getElementById('chartSenadoVotos'), {
+        type: 'bar',
+        data: {
+            labels: ['Roseana', 'Fufuca', 'Lahesio', 'Weverton', 'Eliziane'],
+            datasets: [
+                { label: '1º Voto', data: [19, 15, 12, 9, 8], backgroundColor: 'rgba(0,212,255,0.6)', borderColor: '#00d4ff', borderWidth: 1.5, borderRadius: 6, barPercentage: 0.7 },
+                { label: '2º Voto', data: [14, 12, 10, 11, 8], backgroundColor: 'rgba(179,136,255,0.6)', borderColor: '#b388ff', borderWidth: 1.5, borderRadius: 6, barPercentage: 0.7 }
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { position: 'top' }, tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.raw}%` } } },
+            scales: { y: { grid: { color: 'rgba(30,37,48,0.5)' }, ticks: { callback: v => v + '%' }, max: 22 }, x: { grid: { display: false } } }
+        }
+    });
+
+    // ==================== DEP FEDERAL INOP ====================
+    new Chart(document.getElementById('chartDepFedINOP'), {
+        type: 'bar',
+        data: {
+            labels: ['Duarte Jr. (PSB)', 'Josimar Maranhãozinho (PL)', 'Detinha (PT)', 'Pedro Lucas (União)', 'Josivaldo JP (PSD)', 'Amanda Gentil (PSD)', 'André Fufuca (PP)', 'Hildo Rocha (MDB)'],
+            datasets: [{
+                label: 'Intenção de Voto (%)',
+                data: [6.27, 2.56, 2.44, 1.68, 1.48, 1.40, 1.24, 0.92],
+                backgroundColor: ['rgba(59,130,246,0.7)', 'rgba(255,193,7,0.7)', 'rgba(255,82,82,0.7)', 'rgba(0,230,118,0.7)', 'rgba(0,212,255,0.7)', 'rgba(179,136,255,0.7)', 'rgba(255,152,0,0.6)', 'rgba(139,148,158,0.5)'],
+                borderColor: ['#3b82f6', '#ffc107', '#ff5252', '#00e676', '#00d4ff', '#b388ff', '#ff9800', '#8b949e'],
+                borderWidth: 1.5, borderRadius: 8, barThickness: 22, categoryPercentage: 0.8, barPercentage: 0.85
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+            layout: { padding: { left: 20, right: 30, top: 10, bottom: 10 } },
+            plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${ctx.raw}%` } } },
+            scales: {
+                x: { grid: { color: 'rgba(30,37,48,0.5)' }, ticks: { callback: v => v + '%', padding: 8 }, max: 8 },
+                y: { grid: { display: false }, ticks: { font: { size: 10, weight: '500' }, crossAlign: 'far', padding: 10 } }
+            }
+        }
+    });
+
+    // ==================== DEP FEDERAL IPPI ====================
+    new Chart(document.getElementById('chartDepFedIPPI'), {
+        type: 'bar',
+        data: {
+            labels: ['Josivaldo JP (PSD)', 'Erlanio Xavier (PDT)', 'Iracema Vale (MDB)', 'Duarte Jr. (PSB)', 'Outros'],
+            datasets: [{
+                label: 'Lembrança Espontânea (%)',
+                data: [0.9, 0.9, 0.9, 0.6, 0.4],
+                backgroundColor: ['rgba(0,212,255,0.7)', 'rgba(179,136,255,0.7)', 'rgba(255,193,7,0.7)', 'rgba(59,130,246,0.7)', 'rgba(139,148,158,0.4)'],
+                borderColor: ['#00d4ff', '#b388ff', '#ffc107', '#3b82f6', '#8b949e'],
+                borderWidth: 1.5, borderRadius: 8, barThickness: 22, categoryPercentage: 0.8, barPercentage: 0.85
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+            layout: { padding: { left: 20, right: 30, top: 10, bottom: 10 } },
+            plugins: {
+                legend: { display: false },
+                tooltip: { callbacks: { label: ctx => ` ${ctx.raw}% (${ctx.raw === 0.9 ? '13-14 menções' : 'menos menções'})` } }
+            },
+            scales: {
+                x: { grid: { color: 'rgba(30,37,48,0.5)' }, ticks: { callback: v => v + '%', padding: 8 }, max: 1.2 },
+                y: { grid: { display: false }, ticks: { font: { size: 10, weight: '500' }, crossAlign: 'far', padding: 10 } }
+            }
+        }
+    });
+
+    // ==================== DEP FEDERAL COMPARATIVO ====================
+    new Chart(document.getElementById('chartDepFedComp'), {
+        type: 'bar',
+        data: {
+            labels: ['Duarte Jr.', 'Josimar Maranhãozinho', 'Detinha', 'Pedro Lucas', 'Josivaldo JP'],
+            datasets: [
+                {
+                    label: 'INOP — Estimulada (Fev)',
+                    data: [6.27, 2.56, 2.44, 1.68, 1.48],
+                    backgroundColor: 'rgba(0,212,255,0.6)', borderColor: '#00d4ff', borderWidth: 1.5, borderRadius: 6, barPercentage: 0.65
+                },
+                {
+                    label: 'IPPI — Espontânea (Set)',
+                    data: [0.6, 0.3, 0.2, 0.1, 0.9],
+                    backgroundColor: 'rgba(179,136,255,0.6)', borderColor: '#b388ff', borderWidth: 1.5, borderRadius: 6, barPercentage: 0.65
+                }
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { position: 'top' }, tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.raw}%` } } },
+            scales: { y: { grid: { color: 'rgba(30,37,48,0.5)' }, ticks: { callback: v => v + '%' }, max: 8 }, x: { grid: { display: false } } }
+        }
+    });
+
+    // ==================== DEP ESTADUAL IPPI ====================
+    new Chart(document.getElementById('chartDepEstIPPI'), {
+        type: 'bar',
+        data: {
+            labels: ['Maedja Campos', 'Dep. Janaina', 'Ricardo Arruda', 'Outros (99 nomes)'],
+            datasets: [{
+                label: 'Lembrança Espontânea (%)',
+                data: [0.7, 0.3, 0.2, 0.1],
+                backgroundColor: ['rgba(0,230,118,0.7)', 'rgba(0,212,255,0.7)', 'rgba(255,193,7,0.7)', 'rgba(139,148,158,0.4)'],
+                borderColor: ['#00e676', '#00d4ff', '#ffc107', '#8b949e'],
+                borderWidth: 1.5, borderRadius: 8, barThickness: 24, categoryPercentage: 0.8, barPercentage: 0.85
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+            layout: { padding: { left: 20, right: 30, top: 10, bottom: 10 } },
+            plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${ctx.raw}%` } } },
+            scales: {
+                x: { grid: { color: 'rgba(30,37,48,0.5)' }, ticks: { callback: v => v + '%', padding: 8 }, max: 1 },
+                y: { grid: { display: false }, ticks: { font: { size: 10, weight: '500' }, crossAlign: 'far', padding: 10 } }
+            }
+        }
+    });
+
+    // ==================== DEP ESTADUAL FAROL ====================
+    new Chart(document.getElementById('chartDepEstFarol'), {
+        type: 'bar',
+        data: {
+            labels: ['Neto Evangelista', 'Wellington do Curso', 'Mical Damasceno', 'Aldir Júnior', 'André Campos', 'Dr. Yglésio', 'Iracema Vale'],
+            datasets: [{
+                label: 'Espontânea — São Luís (%)',
+                data: [1.8, 1.2, 0.6, 0.5, 0.5, 0.5, 0.5],
+                backgroundColor: ['rgba(0,212,255,0.7)', 'rgba(255,193,7,0.7)', 'rgba(0,230,118,0.7)', 'rgba(179,136,255,0.7)', 'rgba(255,82,82,0.7)', 'rgba(255,152,0,0.6)', 'rgba(139,148,158,0.5)'],
+                borderColor: ['#00d4ff', '#ffc107', '#00e676', '#b388ff', '#ff5252', '#ff9800', '#8b949e'],
+                borderWidth: 1.5, borderRadius: 8, barThickness: 22, categoryPercentage: 0.8, barPercentage: 0.85
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+            layout: { padding: { left: 20, right: 30, top: 10, bottom: 10 } },
+            plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${ctx.raw}%` } } },
+            scales: {
+                x: { grid: { color: 'rgba(30,37,48,0.5)' }, ticks: { callback: v => v + '%', padding: 8 }, max: 2.2 },
+                y: { grid: { display: false }, ticks: { font: { size: 10, weight: '500' }, crossAlign: 'far', padding: 10 } }
+            }
+        }
+    });
+
+    // ==================== DEP ESTADUAL INDEFINIÇÃO ====================
+    new Chart(document.getElementById('chartDepEstIndef'), {
+        type: 'doughnut',
+        data: {
+            labels: ['Não sabe / NR', 'Branco / Nulo', 'Candidatos citados'],
+            datasets: [{
+                data: [82.8, 7.2, 10.0],
+                backgroundColor: ['rgba(255,82,82,0.7)', 'rgba(139,148,158,0.5)', 'rgba(0,230,118,0.7)'],
+                borderColor: ['#ff5252', '#8b949e', '#00e676'],
+                borderWidth: 2, hoverOffset: 8
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false, cutout: '62%',
+            plugins: {
+                legend: { position: 'bottom', labels: { padding: 14, font: { size: 11 } } },
+                tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw}%` } }
+            }
+        }
+    });
+
+    // ==================== PRESIDENTE 1º TURNO (Quaest vs Datafolha) ====================
+    new Chart(document.getElementById('chartPresidente1T'), {
+        type: 'bar',
+        data: {
+            labels: ['Lula (PT)', 'Flávio Bolsonaro (PL)', 'Augusto Cury (Avante)', 'Ronaldo Caiado (PSD)', 'Renan Santos (Missão)', 'Outros'],
+            datasets: [
+                {
+                    label: 'Quaest (28/set)',
+                    data: [39, 34, 4, 4, 3, 1],
+                    backgroundColor: 'rgba(0,212,255,0.6)',
+                    borderColor: '#00d4ff',
+                    borderWidth: 1.5, borderRadius: 6, barPercentage: 0.65
+                },
+                {
+                    label: 'Datafolha (24/set)',
+                    data: [40, 36, 2, 3, 1, 4],
+                    backgroundColor: 'rgba(179,136,255,0.6)',
+                    borderColor: '#b388ff',
+                    borderWidth: 1.5, borderRadius: 6, barPercentage: 0.65
+                }
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'top' },
+                tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.raw}%` } }
+            },
+            scales: {
+                y: { grid: { color: 'rgba(30,37,48,0.5)' }, ticks: { callback: v => v + '%' }, max: 45 },
+                x: { grid: { display: false }, ticks: { font: { size: 10 } } }
+            }
+        }
+    });
+
+    // ==================== PRESIDENTE 2º TURNO (Quaest vs Datafolha) ====================
+    new Chart(document.getElementById('chartPresidente2T'), {
+        type: 'bar',
+        data: {
+            labels: ['Quaest (28/set)', 'Datafolha (24/set)'],
+            datasets: [
+                {
+                    label: 'Lula (PT)',
+                    data: [42, 47],
+                    backgroundColor: 'rgba(255,82,82,0.7)',
+                    borderColor: '#ff5252',
+                    borderWidth: 1.5, borderRadius: 8, barThickness: 50
+                },
+                {
+                    label: 'Flávio Bolsonaro (PL)',
+                    data: [42, 45],
+                    backgroundColor: 'rgba(59,130,246,0.7)',
+                    borderColor: '#3b82f6',
+                    borderWidth: 1.5, borderRadius: 8, barThickness: 50
+                }
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'top' },
+                tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.raw}%` } }
+            },
+            scales: {
+                y: { grid: { color: 'rgba(30,37,48,0.5)' }, ticks: { callback: v => v + '%' }, max: 55 },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+
+    // ==================== EVOLUÇÃO (CORRIGIDO) ====================
+    new Chart(document.getElementById('chartEvolucao'), {
+        type: 'line',
+        data: {
+            labels: ['Datafolha 24/set', 'Quaest 28/set'],
+            datasets: [
+                {
+                    label: 'Lula (PT)',
+                    data: [47, 42],
+                    borderColor: '#ff5252',
+                    backgroundColor: 'rgba(255,82,82,0.08)',
+                    fill: false,
+                    tension: 0.3,
+                    pointRadius: 6,
+                    pointHoverRadius: 8,
+                    pointBackgroundColor: '#ff5252',
+                    pointBorderColor: '#06080f',
+                    pointBorderWidth: 2,
+                    borderWidth: 3
+                },
+                {
+                    label: 'Flávio Bolsonaro (PL)',
+                    data: [45, 42],
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59,130,246,0.08)',
+                    fill: false,
+                    tension: 0.3,
+                    pointRadius: 6,
+                    pointHoverRadius: 8,
+                    pointBackgroundColor: '#3b82f6',
+                    pointBorderColor: '#06080f',
+                    pointBorderWidth: 2,
+                    borderWidth: 3
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'top' },
+                tooltip: {
+                    callbacks: {
+                        title: ctx => ctx[0].label,
+                        label: ctx => ` ${ctx.dataset.label}: ${ctx.raw}%`
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    grid: { color: 'rgba(30,37,48,0.5)' },
+                    ticks: { callback: v => v + '%', stepSize: 2 },
+                    min: 38,
+                    max: 52
+                },
+                x: {
+                    grid: { display: false },
+                    ticks: { font: { size: 11, weight: '500' } }
+                }
+            }
+        }
+    });
+    </script>
+</body>
+</html>
