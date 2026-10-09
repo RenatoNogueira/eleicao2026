@@ -1,4 +1,4 @@
-// Gera index.html (arquivo unico, offline) a partir de src/ (EJS) + CSV + malha do IBGE.
+// Gera index.html (arquivo unico, offline) na raiz e em public/ (Vercel) a partir de src/ (EJS) + CSV + malha do IBGE.
 // Uso: npm run build   |   npm run watch
 const fs = require('fs');
 const path = require('path');
@@ -9,6 +9,7 @@ const SRC = path.join(ROOT, 'src');
 const CSV = path.join(ROOT, 'resultados_governador_por_municipio.csv');
 const MAP = path.join(ROOT, 'data', 'mapa_ma.json');
 const OUT = path.join(ROOT, 'index.html');
+const PUBLIC_DIR = path.join(ROOT, 'public'); // pasta publicada no Vercel
 
 function readCsv(file) {
   const lines = fs.readFileSync(file, 'utf8').replace(/^\uFEFF/, '').split(/\r?\n/).filter(Boolean);
@@ -38,6 +39,8 @@ function build() {
   const tpl = path.join(SRC, 'index.ejs');
   const html = ejs.render(fs.readFileSync(tpl, 'utf8'), { data, mapJson }, { filename: tpl });
   fs.writeFileSync(OUT, html, 'utf8');
+  fs.mkdirSync(PUBLIC_DIR, { recursive: true });
+  fs.writeFileSync(path.join(PUBLIC_DIR, 'index.html'), html, 'utf8');
   console.log(`index.html gerado: ${(html.length / 1024).toFixed(1)} KB, ${data.length} municipios`);
 }
 
