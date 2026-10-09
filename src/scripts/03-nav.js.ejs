@@ -22,6 +22,7 @@ function go(v,instant){
   history.replaceState(null,'','#'+v);scrollTo({top:0});
   const view=$('#v-'+v);
   if(v==='compare'&&!same)cmpSig=null;
+  if(v==='deps'&&!same){depSig=null;depCmpSig=null}
   $$('.card',view).forEach((c,i)=>c.style.setProperty('--i',Math.min(i,14)));
   const reveal=()=>{cancelAnimationFrame(pgRaf);setProgress(view,100);view.classList.remove('sk');renderCharts();if(v==='overview')animateHero()};
   if(instant||same||matchMedia('(prefers-reduced-motion: reduce)').matches){reveal();return}

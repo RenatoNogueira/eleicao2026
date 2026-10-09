@@ -4,7 +4,8 @@
   "description": "Painel de resultados do governo do Maranhao 2026, gerado com EJS a partir do CSV",
   "scripts": {
     "build": "node build.js",
-    "watch": "node build.js --watch"
+    "watch": "node build.js --watch",
+    "dados:deputados": "node tools/tse-deputados.js"
   },
   "devDependencies": {
     "ejs": "^3.1.10"

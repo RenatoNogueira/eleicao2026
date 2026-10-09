@@ -32,11 +32,16 @@
 <!-- ANALYSIS -->
 <%- include('views/analysis') %>
 
+<!-- DEPUTADOS -->
+<%- include('views/deputados') %>
+
 <%- include('partials/footer') %>
 </main></div>
 
 <%- include('partials/overlays') %>
 
+<script type="application/json" id="dep-federal"><%- depFederal %></script>
+<script type="application/json" id="dep-estadual"><%- depEstadual %></script>
 <script>
 <%- include('scripts/00-raw-data.js.ejs') %>
 <%- include('scripts/01-data.js.ejs') %>
@@ -50,7 +55,8 @@
 <%- include('scripts/09-search-boxes.js.ejs') %>
 <%- include('scripts/10-compare.js.ejs') %>
 <%- include('scripts/11-analysis.js.ejs') %>
-<%- include('scripts/12-init.js.ejs') %>
+<%- include('scripts/12-deputados.js.ejs') %>
+<%- include('scripts/13-init.js.ejs') %>
 </script>
 </body>
 </html>

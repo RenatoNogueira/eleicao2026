@@ -1,7 +1,7 @@
 <header>
   <div class="top">
     <div class="brand">
-      <div class="logo">MA</div>
+      <img class="flag" src="<%- flagUri %>" alt="Bandeira do Maranhão" width="57" height="38">
       <div><h1>Governo do Maranhão 2026</h1><p>Braide × Orleans · resultado por município</p></div>
     </div>
     <div class="gsearch">
@@ -12,10 +12,11 @@
     <button class="icon-btn" id="theme" title="Alternar tema" aria-label="Alternar tema">◐</button>
   </div>
   <nav id="nav">
-    <button data-v="overview" class="on">Visão geral</button>
+    <button data-v="overview" class="on"><span class="lg">Visão geral</span><span class="sm">Geral</span></button>
     <button data-v="map">Mapa</button>
-    <button data-v="cities">Municípios</button>
+    <button data-v="cities"><span class="lg">Municípios</span><span class="sm">Cidades</span></button>
     <button data-v="compare">Comparar</button>
     <button data-v="analysis">Análises</button>
+    <button data-v="deps">Deputados</button>
   </nav>
 </header>

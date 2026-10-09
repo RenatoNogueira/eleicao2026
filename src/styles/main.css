@@ -61,7 +61,11 @@ section.view.on{display:block}
 .hero{padding:26px;overflow:hidden;position:relative}
 .hero-top{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;align-items:flex-end}
 .cand{display:flex;gap:14px;align-items:center}
-.avatar{width:54px;height:54px;border-radius:16px;display:grid;place-items:center;font-weight:800;font-size:18px;color:#fff}
+.avatar{position:relative;overflow:hidden;width:76px;height:76px;border-radius:22px;display:grid;place-items:center;font-weight:800;font-size:22px;color:#fff;flex:none}
+.avatar b{font-weight:800}
+.avatar img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center top}
+.cand.a .avatar{box-shadow:0 0 0 3px var(--card-solid),0 0 0 5px var(--a)}
+.cand.b .avatar{box-shadow:0 0 0 3px var(--card-solid),0 0 0 5px var(--b)}
 .cand.a .avatar{background:linear-gradient(135deg,var(--a),#7c5cff)}
 .cand.b .avatar{background:linear-gradient(135deg,var(--b),#ef6a2e)}
 .cand small{display:block;font-size:12px;color:var(--tx2)}
@@ -180,8 +184,9 @@ body{overflow-x:clip;max-width:100%}
   .hero{padding:18px}
   .hero-top{gap:14px;flex-wrap:nowrap}
   .cand{gap:9px;min-width:0;flex:1}
-  .cand .avatar{display:none}.cand.b .txt{text-align:right}.cand.a .txt{text-align:left}
-  .cand.b{justify-content:flex-end}
+  .cand{flex-direction:column;align-items:flex-start;gap:12px}.cand.b{flex-direction:column;align-items:flex-end}
+  .cand .avatar{width:56px;height:56px;border-radius:18px;font-size:17px}
+  .cand.b .txt{text-align:right}.cand.a .txt{text-align:left}
   .cand strong{font-size:15px}.cand .pct{font-size:32px}.cand small{font-size:11px}
   .bar{margin-top:16px}
   .hero-foot{flex-direction:column;gap:4px;font-size:12.5px}
@@ -260,3 +265,36 @@ section.view.on:not(.sk) .card{animation:rise .55s cubic-bezier(.2,.8,.2,1) both
 .pg span{font:500 11.5px 'JetBrains Mono',monospace;color:var(--tx2)}
 #topbar{position:fixed;top:0;left:0;right:0;height:3px;z-index:70;transform-origin:left;transform:scaleX(0);background:linear-gradient(90deg,var(--a),var(--b));opacity:0;transition:opacity .3s ease;pointer-events:none;box-shadow:0 0 10px var(--a)}
 #topbar.on{opacity:1}
+
+/* ---------- aba Deputados ---------- */
+nav .sm{display:none}
+@media(max-width:700px){nav .lg{display:none}nav .sm{display:inline}}
+.card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:14px}
+.card-head .sub{margin-bottom:0}
+.tag.ok{background:rgba(16,185,129,.15);color:var(--ok)}
+.tag.mut{background:var(--bg2);color:var(--tx2)}
+.pav{position:relative;flex:none;width:var(--sz,40px);height:var(--sz,40px);border-radius:50%;overflow:hidden;display:inline-grid;place-items:center;background:linear-gradient(135deg,var(--a-soft),var(--b-soft));border:1px solid var(--line)}
+.pav b{font-size:calc(var(--sz,40px)*.34);color:var(--tx2);letter-spacing:.02em}
+.pav img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:var(--card-solid)}
+.pt{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--tx2)}
+.pt i{width:9px;height:9px;border-radius:3px;display:inline-block}
+.elected{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.ec{position:relative;display:flex;align-items:center;gap:12px;padding:12px;border-radius:14px;border:1px solid var(--line);background:var(--card-solid);text-align:left;transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease;animation:rise .45s cubic-bezier(.2,.8,.2,1) both}
+.ec:hover{transform:translateY(-3px);border-color:var(--a);box-shadow:var(--shadow)}
+.ecb{display:grid;gap:2px;min-width:0}
+.ecb b{font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ecv{font-size:12.5px;font-weight:700}.ecv small{font-weight:500;color:var(--tx3)}
+.ecr{position:absolute;top:8px;right:10px;font:500 11px 'JetBrains Mono',monospace;color:var(--tx3)}
+.cn{display:inline-flex;align-items:center;gap:10px}
+.dcand{display:flex;align-items:center;gap:14px}
+#depMap svg{max-height:520px}
+@media(max-width:700px){
+  .elected{grid-template-columns:1fr}
+  .card-head{flex-wrap:wrap}
+  tbody td.cname .cn{gap:8px}
+  .dcand{gap:10px}
+}
+
+/* bandeira do Maranhao no cabecalho */
+.flag{display:block;height:38px;width:auto;aspect-ratio:3/2;border-radius:7px;box-shadow:0 0 0 1px var(--line),0 6px 18px var(--glow1);object-fit:cover;flex:none}
+@media(max-width:700px){.flag{height:30px}}
