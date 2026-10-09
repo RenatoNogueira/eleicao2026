@@ -1,5 +1,5 @@
 /* ---------- init ---------- */
 CMP=[...D].sort((x,y)=>y.t-x.t).slice(0,3).map(d=>d.code);
 renderOverview();renderMap();renderTable();renderAnalysis();
-const h=location.hash.slice(1);go(['overview','map','cities','compare','analysis'].includes(h)?h:'overview');
+const h=location.hash.slice(1);go(['overview','map','cities','compare','analysis','deps'].includes(h)?h:'overview');
 addEventListener('resize',()=>{});

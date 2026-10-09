@@ -1,0 +1,236 @@
+/* ---------- deputados (federal e estadual) ---------- */
+const DEPS={cg:'federal',cache:{},q:'',party:'all',only:'all',sort:'v',dir:-1,page:0,per:15,sel:0,metric:'pct',munSel:null,all:false,cmp:{federal:[],estadual:[]}};
+let depSig=null,depCmpSig=null;
+const DEP_PAL=['#3b6cff','#f59e0b','#10b981','#a855f7','#ef4444','#06b6d4','#ec4899','#84cc16','#f97316','#6366f1','#14b8a6','#eab308'];
+const DEP_GRAY='#94a3b8';
+
+function depLoad(cg){
+  if(!DEPS.cache[cg]){
+    const d=JSON.parse(document.getElementById('dep-'+cg).textContent);
+    d.order=d.parties.map((p,i)=>i).sort((a,b)=>d.parties[b].tot-d.parties[a].tot);
+    d.color={};d.order.forEach((pi,r)=>d.color[pi]=r<DEP_PAL.length?DEP_PAL[r]:DEP_GRAY);
+    d.munIdx=Object.fromEntries(d.mun.map((c,i)=>[c,i]));
+    d.cands.forEach((c,i)=>{c.i=i;c.rank=i+1;c.key=norm(c.nu+' '+c.nm+' '+c.n+' '+d.parties[c.p].sg+' '+d.parties[c.p].fed)});
+    const seen={};d.cands.forEach(c=>{seen[c.p]=(seen[c.p]||0)+1;c.prank=seen[c.p]});
+    DEPS.cache[cg]=d;
+  }
+  return DEPS.cache[cg];
+}
+const depD=()=>depLoad(DEPS.cg);
+const depPhoto=c=>{const d=depD();return `https://resultados.tse.jus.br/oficial/ele2026/${d.eleicao}/fotos/${d.uf.toLowerCase()}/${c.id}.jpeg`};
+const depInitials=n=>{const w=n.split(' ').filter(x=>x.length>2);return (((w[0]||n)[0]||'')+((w[1]||'')[0]||'')).toUpperCase()};
+const depAvatar=(c,sz)=>`<span class="pav" style="--sz:${sz}px"><b>${depInitials(c.nu)}</b><img loading="lazy" alt="" src="${depPhoto(c)}" onerror="this.remove()"></span>`;
+const depParty=c=>{const d=depD();return `<span class="pt"><i style="background:${d.color[c.p]}"></i>${d.parties[c.p].sg}</span>`};
+const depStatus=c=>c.e?(/m[ée]dia/i.test(c.st)?'Eleito (média)':'Eleito (QP)'):c.dv&&c.dv!=='Válido'?'Anulado':c.st==='Suplente'?'Suplente':'Não eleito';
+const depTag=c=>`<span class="tag ${c.e?'ok':'mut'}">${depStatus(c)}</span>`;
+const depMunName=code=>byCode[code]?title(byCode[code].name):code;
+const depShare=(c,mi)=>{const d=depD();return d.vv[mi]?d.mv[c.i][mi]/d.vv[mi]*100:0};
+
+/* ----- render principal ----- */
+function renderDeps(){
+  const d=depD();
+  $$('#depCargo button').forEach(b=>b.classList.toggle('on',b.dataset.c===DEPS.cg));
+  $('#depNote').textContent=`Atualizado em ${d.atualizado} · ${pc(d.secoes.apuradas/d.secoes.total*100,0)} das seções apuradas`;
+  const g=d.geral,compPct=g.comp/g.aptos*100;
+  const kp=[
+    ['a','Vagas em disputa',d.vagas,'int',`${d.cands.length} candidatos · quociente eleitoral ${fmt(d.qe)}`],
+    ['b','Comparecimento',compPct,'pct2',`${fmt(g.comp)} de ${fmt(g.aptos)} eleitores`],
+    ['a','Votos nominais',g.nom,'int',`${pc(g.nom/g.validos*100)} dos votos válidos`],
+    ['b','Votos de legenda',g.leg,'int',`${pc(g.leg/g.validos*100)} dos votos válidos`]];
+  $('#depKpis').innerHTML=kp.map(k=>`<div class="card kpi"><div class="lbl"><span class="dot" style="background:var(--${k[0]})"></span>${k[1]}</div><div class="val num" data-to="${k[2]}" data-kind="${k[3]}">${countFmt[k[3]](k[2])}</div><div class="ft">${k[4]}</div></div>`).join('');
+  renderDepElected();
+  renderDepCharts();
+  const sel=$('#depParty');
+  sel.innerHTML='<option value="all">Todos os partidos</option>'+d.order.map(i=>`<option value="${i}">${d.parties[i].sg} (${d.parties[i].eleitos} eleitos)</option>`).join('');
+  sel.value=DEPS.party;
+  renderDepTable();renderDepMap();renderDepCompare();
+  if(depSig!==DEPS.cg){depSig=DEPS.cg;animateIn($('#depKpis'),1200)}
+}
+
+function renderDepElected(){
+  const d=depD(),el=d.cands.filter(c=>c.e),n=el.length,shown=DEPS.all?el:el.slice(0,12);
+  const qp=el.filter(c=>!/m[ée]dia/i.test(c.st)).length;
+  $('#depElT').textContent=`${n} ${d.nome.replace('Deputado','deputados').replace('deputados Federal','deputados federais').replace('deputados Estadual','deputados estaduais')} eleitos`;
+  $('#depElS').textContent=`${n} de ${d.vagas} vagas · ${qp} por quociente partidário · ${n-qp} por média`;
+  $('#depElected').innerHTML=shown.map(c=>`<button class="ec" data-i="${c.i}">${depAvatar(c,52)}<span class="ecb"><b>${title(c.nu)}</b>${depParty(c)}<span class="num ecv">${fmt(c.v)} <small>${pp(c.pc)}%</small></span></span><span class="ecr">${c.rank}º</span></button>`).join('');
+  const m=$('#depElMore');m.style.display=n>12?'':'none';m.textContent=DEPS.all?'Mostrar menos':`Ver todos os ${n}`;
+}
+
+function renderDepCharts(){
+  const d=depD(),tx=css('--tx2'),ln=css('--line');
+  const top=d.order.slice(0,12),O=baseOpts();
+  mk('dChVotes',{type:'bar',data:{labels:top.map(i=>d.parties[i].sg),datasets:[{data:top.map(i=>d.parties[i].tot),backgroundColor:top.map(i=>d.color[i]),borderRadius:6}]},
+    options:{...O,indexAxis:'y',plugins:{legend:{display:false},tooltip:{...O.plugins.tooltip,callbacks:{label:c=>{const p=d.parties[top[c.dataIndex]];return [` ${fmt(p.tot)} votos (${pc(p.tot/d.geral.validos*100)})`,` ${fmt(p.nom)} nominais · ${fmt(p.leg)} de legenda`]}}}},
+      scales:{x:{grid:{color:ln},ticks:{color:tx,callback:v=>v>=1e6?(v/1e6)+' mi':v>=1e3?(v/1e3)+' mil':v},border:{display:false}},y:{grid:{display:false},ticks:{color:tx},border:{display:false}}}}});
+  const seats=d.order.filter(i=>d.parties[i].eleitos>0).sort((a,b)=>d.parties[b].eleitos-d.parties[a].eleitos||d.parties[b].tot-d.parties[a].tot);
+  $('#depSeatsSub').textContent=`${d.vagas} cadeiras distribuídas entre ${seats.length} partidos`;
+  mk('dChSeats',{type:'bar',data:{labels:seats.map(i=>d.parties[i].sg),datasets:[{data:seats.map(i=>d.parties[i].eleitos),backgroundColor:seats.map(i=>d.color[i]),borderRadius:6}]},
+    options:{...O,indexAxis:'y',plugins:{legend:{display:false},tooltip:{...O.plugins.tooltip,callbacks:{label:c=>` ${c.raw} ${c.raw===1?'eleito':'eleitos'} de ${d.parties[seats[c.dataIndex]].cands} candidatos`}}},
+      scales:{x:{grid:{color:ln},ticks:{color:tx,stepSize:1,precision:0},border:{display:false}},y:{grid:{display:false},ticks:{color:tx},border:{display:false}}}}});
+}
+
+/* ----- tabela de candidatos ----- */
+const depCols=[['nu','Candidato'],['rank','Posição','r'],['n','Nº'],['sg','Partido'],['v','Votos','r'],['pc','% válidos','r'],['st','Situação']];
+function depFiltered(){
+  const d=depD(),q=norm(DEPS.q.trim());
+  const get={rank:c=>c.i,nu:c=>c.nu,n:c=>+c.n,sg:c=>d.parties[c.p].sg,v:c=>c.v,pc:c=>c.pc,st:c=>c.e*2+(c.st==='Suplente'?1:0)}[DEPS.sort];
+  return d.cands.filter(c=>(!q||c.key.includes(q))&&(DEPS.party==='all'||c.p===+DEPS.party)&&(DEPS.only==='all'||(DEPS.only==='e'?c.e:c.st==='Suplente')))
+    .sort((x,y)=>{const a=get(x),b=get(y);return (typeof a==='string'?a.localeCompare(b,'pt-BR'):a-b)*DEPS.dir});
+}
+function renderDepTable(){
+  $('#depTbl thead').innerHTML='<tr>'+depCols.map(c=>`<th data-k="${c[0]}" class="${c[2]||''} ${DEPS.sort===c[0]?'s':''}">${c[1]}<span class="ar">${DEPS.dir>0?'▲':'▼'}</span></th>`).join('')+'</tr>';
+  const r=depFiltered(),pages=Math.max(1,Math.ceil(r.length/DEPS.per));DEPS.page=Math.min(DEPS.page,pages-1);
+  const sl=r.slice(DEPS.page*DEPS.per,(DEPS.page+1)*DEPS.per);
+  $('#depTbl tbody').innerHTML=sl.length?sl.map(c=>`<tr data-i="${c.i}"><td class="cname"><span class="cn">${depAvatar(c,28)}<b>${title(c.nu)}</b></span></td><td class="r num" data-l="Posição">${c.rank}º</td><td class="num" data-l="Nº">${c.n}</td><td data-l="Partido">${depParty(c)}</td><td class="r num" data-l="Votos">${fmt(c.v)}</td><td class="r num" data-l="% válidos">${pp(c.pc)}%</td><td class="clead">${depTag(c)}</td></tr>`).join(''):'<tr><td colspan="7" class="cempty"><div class="empty">Nenhum candidato encontrado.</div></td></tr>';
+  $('#depCount').textContent=`${r.length} de ${depD().cands.length} candidatos`;
+  $('#depPinfo').textContent=r.length?`Mostrando ${DEPS.page*DEPS.per+1}–${Math.min(r.length,(DEPS.page+1)*DEPS.per)} de ${r.length}`:'';
+  $('#depPbtn').innerHTML=`<button class="btn" id="depPp" ${DEPS.page==0?'disabled':''}>← Anterior</button><span style="align-self:center">${DEPS.page+1} / ${pages}</span><button class="btn" id="depPn" ${DEPS.page>=pages-1?'disabled':''}>Próxima →</button>`;
+}
+
+/* ----- mapa por candidato ----- */
+function depVals(c){const d=depD();return d.mun.map((_,mi)=>DEPS.metric==='pct'?depShare(c,mi):d.mv[c.i][mi])}
+function depFill(v,max){return `color-mix(in srgb,var(--a) ${Math.round(8+92*Math.sqrt(max?v/max:0))}%,var(--bg2))`}
+function renderDepMap(){
+  const d=depD(),c=d.cands[DEPS.sel],vals=depVals(c),max=Math.max(...vals);
+  const box=$('#depMap');
+  if(!box.querySelector('svg')||box.dataset.cg!==DEPS.cg){
+    box.dataset.cg=DEPS.cg;
+    box.innerHTML=`<svg viewBox="${MAP.vb}" role="img" aria-label="Mapa de votos">${d.mun.map(code=>MAP.p[code]?`<path data-c="${code}" d="${MAP.p[code]}"></path>`:'').join('')}</svg>`;
+    attachZoom(box,false);
+  }
+  const idx=d.munIdx;
+  $$('path',box).forEach(p=>p.style.fill=depFill(vals[idx[p.dataset.c]],max));
+  const unit=v=>DEPS.metric==='pct'?pp(v)+'%':fmt(v);
+  $('#depLegend').innerHTML=`<span>0</span><span class="grad" style="background:linear-gradient(90deg,color-mix(in srgb,var(--a) 8%,var(--bg2)),var(--a))"></span><span>${unit(max)}</span><span style="margin-left:6px;color:var(--tx3)">${DEPS.metric==='pct'?'% dos votos válidos do município':'votos no município'}</span>`;
+  $$('#depMetric button').forEach(b=>b.classList.toggle('on',b.dataset.m===DEPS.metric));
+  const topM=d.mun.map((code,mi)=>({code,mi,v:d.mv[c.i][mi]})).sort((a,b)=>b.v-a.v).slice(0,6),mx=topM[0].v||1;
+  $('#depCandCard').innerHTML=`<div class="dcand">${depAvatar(c,64)}<div><h3 style="font-size:17px">${title(c.nu)}</h3><p class="sub" style="margin:2px 0 6px">Nº ${c.n} · ${d.parties[c.p].sg}${d.parties[c.p].fed?' · fed. '+d.parties[c.p].fed:''}</p>${depTag(c)}</div></div>
+    <div class="stat" style="margin:14px 0 10px"><div><small>Votos</small><b class="num">${fmt(c.v)}</b></div><div><small>% válidos</small><b class="num">${pp(c.pc)}%</b></div></div>
+    <p class="sub" style="margin:0 0 6px">Municípios com mais votos</p>
+    <ul class="rank" id="depTopMun">${topM.map((m,i)=>`<li data-mun="${m.code}"><span class="n">${String(i+1).padStart(2,'0')}</span><span><b>${depMunName(m.code)}</b></span><span class="num">${fmt(m.v)}</span><span></span><div class="bg"><i style="width:${m.v/mx*100}%;background:var(--a)"></i></div></li>`).join('')}</ul>
+    <button class="btn" style="margin-top:10px;width:100%" onclick="openCand(${c.i})">Ver detalhes do candidato</button>`;
+  renderDepMun();
+}
+function renderDepMun(){
+  const d=depD(),code=DEPS.munSel;
+  if(!code){$('#depMunCard').innerHTML='<h3>Passe o mouse ou clique no mapa</h3><p class="sub" style="margin:4px 0 0">Clique em um município para ver os candidatos mais votados nele.</p>';return}
+  const mi=d.munIdx[code],top=d.cands.map(c=>({c,v:d.mv[c.i][mi]})).sort((a,b)=>b.v-a.v).slice(0,6),mx=top[0].v||1,vv=d.vv[mi];
+  $('#depMunCard').innerHTML=`<h3 style="font-size:16px">${depMunName(code)}</h3><p class="sub">${fmt(vv)} votos válidos · mais votados</p>
+    <ul class="rank">${top.map((t,i)=>`<li data-i="${t.c.i}"><span class="n">${String(i+1).padStart(2,'0')}</span><span><b>${title(t.c.nu)}</b> <small style="color:var(--tx3)">${depD().parties[t.c.p].sg}</small></span><span class="num">${fmt(t.v)}</span><span></span><div class="bg"><i style="width:${t.v/mx*100}%;background:${depD().color[t.c.p]}"></i></div></li>`).join('')}</ul>`;
+}
+function depTipHTML(code){
+  const d=depD(),c=d.cands[DEPS.sel],mi=d.munIdx[code],v=d.mv[c.i][mi];
+  return `<b>${depMunName(code)}</b><span style="color:var(--a)">${title(c.nu)}</span><br>${fmt(v)} votos · ${pp(depShare(c,mi))}% dos válidos`;
+}
+function depPickMun(code){DEPS.munSel=code;renderDepMun()}
+
+/* ----- comparar candidatos ----- */
+function depToggleCmp(i){
+  const l=DEPS.cmp[DEPS.cg],k=l.indexOf(i);
+  if(k>=0)l.splice(k,1);else{if(l.length>=4)l.shift();l.push(i)}
+  renderDepCompare();
+}
+function renderDepCompare(){
+  const d=depD(),ids=DEPS.cmp[DEPS.cg],body=$('#depCmpBody');
+  $('#depSels').innerHTML=ids.map(i=>`<span class="sel">${title(d.cands[i].nu)}<button data-rm="${i}" aria-label="Remover">×</button></span>`).join('');
+  if(!ids.length){body.innerHTML='<div class="card empty" style="margin-top:16px">Adicione candidatos acima (ou use um atalho) para comparar.</div>';charts.dCmp1?.destroy();charts.dCmp2?.destroy();return}
+  const cs=ids.map(i=>d.cands[i]);
+  const lead=c=>d.mun.reduce((n,_,mi)=>{let best=-1,bv=-1;for(const o of d.cands){const v=d.mv[o.i][mi];if(v>bv){bv=v;best=o.i}}return n+(best===c.i&&bv>0?1:0)},0);
+  const best=c=>{let mi=0;d.mv[c.i].forEach((v,k)=>{if(v>d.mv[c.i][mi])mi=k});return {mi,v:d.mv[c.i][mi]}};
+  body.innerHTML=`<div class="grid cgrid" style="margin-top:16px">${cs.map((c,k)=>{const b=best(c);return `<div class="card ccard"><div class="nm" style="border-left:4px solid ${CC[k]};padding-left:10px">${title(c.nu)}</div>
+    <p class="sub" style="margin:2px 0 10px 14px">${depParty(c)} · Nº ${c.n}</p>
+    <div class="row"><span>Votos</span><b class="num" data-to="${c.v}" data-kind="int">${fmt(c.v)}</b></div>
+    <div class="row"><span>% dos válidos</span><b class="num" data-to="${c.pc}" data-kind="pct2">${pc(c.pc,2)}</b></div>
+    <div class="row"><span>Posição</span><b class="num">${c.rank}º de ${d.cands.length}</b></div>
+    <div class="row"><span>Situação</span><b>${depStatus(c)}</b></div>
+    <div class="row"><span>Mais votado em</span><b>${c.v?depMunName(d.mun[b.mi]):'–'}</b></div>
+    <div class="row"><span>Municípios que lidera</span><b class="num" data-to="${lead(c)}" data-kind="int">${lead(c)}</b></div></div>`}).join('')}</div>
+    <div class="grid g2" style="margin-top:16px">
+      <div class="card"><h3>Votos nos municípios-chave</h3><p class="sub">Os 8 municípios com mais votos somados entre os candidatos</p><div class="ch"><canvas id="dCmp1"></canvas></div></div>
+      <div class="card"><h3>Votos totais</h3><p class="sub">No estado inteiro</p><div class="ch"><canvas id="dCmp2"></canvas></div></div>
+    </div>`;
+  const O=baseOpts(),tx=css('--tx2'),ln=css('--line');
+  const keyM=d.mun.map((code,mi)=>({code,mi,s:cs.reduce((t,c)=>t+d.mv[c.i][mi],0)})).sort((a,b)=>b.s-a.s).slice(0,8);
+  const col=k=>k===0?css('--a'):k===1?css('--b'):k===2?'#10b981':'#a855f7';
+  mk('dCmp1',{type:'bar',data:{labels:keyM.map(m=>depMunName(m.code)),datasets:cs.map((c,k)=>({label:title(c.nu),data:keyM.map(m=>d.mv[c.i][m.mi]),backgroundColor:col(k),borderRadius:5}))},
+    options:{...O,plugins:{...O.plugins,tooltip:{...O.plugins.tooltip,callbacks:{label:x=>` ${x.dataset.label}: ${fmt(x.raw)}`}}},scales:{x:{grid:{display:false},ticks:{color:tx,maxRotation:45,minRotation:0},border:{display:false}},y:{grid:{color:ln},ticks:{color:tx},border:{display:false}}}}});
+  mk('dCmp2',{type:'bar',data:{labels:cs.map(c=>title(c.nu)),datasets:[{data:cs.map(c=>c.v),backgroundColor:cs.map((c,k)=>col(k)),borderRadius:7}]},
+    options:{...O,plugins:{legend:{display:false},tooltip:{...O.plugins.tooltip,callbacks:{label:x=>` ${fmt(x.raw)} votos (${pc(cs[x.dataIndex].pc,2)})`}}},scales:{x:{grid:{display:false},ticks:{color:tx},border:{display:false}},y:{grid:{color:ln},ticks:{color:tx},border:{display:false}}}}});
+  const sig=DEPS.cg+':'+ids.join(',');if(depCmpSig!==sig){depCmpSig=sig;animateIn(body,1100)}
+}
+
+/* ----- gaveta do candidato ----- */
+function openCand(i){
+  const d=depD(),c=d.cands[i];if(!c)return;
+  const inCmp=DEPS.cmp[DEPS.cg].includes(i),mx0=Math.max(...d.mv[i],1);
+  const top=d.mun.map((code,mi)=>({code,v:d.mv[i][mi],mi})).sort((a,b)=>b.v-a.v).slice(0,8);
+  const pr=d.parties[c.p];
+  $('#drawer').innerHTML=`<button class="icon-btn x" onclick="closeDrawer()" aria-label="Fechar">✕</button>
+   ${depTag(c)}
+   <div class="dcand" style="margin-top:14px">${depAvatar(c,72)}<div><h2 style="margin:0">${title(c.nu)}</h2><p style="color:var(--tx2);font-size:13px;margin-top:4px">${title(c.nm)}</p></div></div>
+   <p style="margin-top:12px;font-size:13px;color:var(--tx2)">${d.nome} · Nº ${c.n} · ${depParty(c)}${pr.fed?' · federação '+pr.fed:''}</p>
+   <div class="stat">
+     <div><small>Votos</small><b class="num" data-to="${c.v}" data-kind="int">${fmt(c.v)}</b></div><div><small>% dos válidos</small><b class="num" data-to="${c.pc}" data-kind="pct2">${pc(c.pc,2)}</b></div>
+     <div><small>Posição geral</small><b class="num">${c.rank}º <span style="font-size:12px;color:var(--tx3)">de ${d.cands.length}</span></b></div><div><small>Posição no partido</small><b class="num">${c.prank}º <span style="font-size:12px;color:var(--tx3)">de ${pr.cands}</span></b></div>
+   </div>
+   <p class="sub" style="margin:0 0 6px;font-weight:700;color:var(--tx)">Municípios com mais votos</p>
+   <ul class="rank">${top.map((m,k)=>`<li data-mun="${m.code}" data-pick="${i}"><span class="n">${String(k+1).padStart(2,'0')}</span><span><b>${depMunName(m.code)}</b></span><span class="num">${fmt(m.v)}</span><span></span><div class="bg"><i style="width:${m.v/mx0*100}%;background:var(--a)"></i></div></li>`).join('')}</ul>
+   <div style="display:flex;gap:8px;margin-top:18px;flex-wrap:wrap"><button class="btn pri" onclick="depToMap(${i})">Ver no mapa</button><button class="btn" onclick="depCmpFromDrawer(${i})">${inCmp?'Remover da comparação':'+ Comparar'}</button></div>`;
+  $('#drawer').classList.add('on');animateIn($('#drawer'),900);$('#scrim').classList.add('on');$('#drawer').setAttribute('aria-hidden','false');
+}
+function depGoDeps(after){if(curView!=='deps'){go('deps');setTimeout(after,700)}else after()}
+function depToMap(i){closeDrawer();DEPS.sel=i;DEPS.munSel=null;depGoDeps(()=>{renderDepMap();$('#depMap').scrollIntoView({behavior:'smooth',block:'center'})})}
+function depCmpFromDrawer(i){closeDrawer();depGoDeps(()=>{depToggleCmp(i);$('#depCmpBody').scrollIntoView({behavior:'smooth',block:'start'})})}
+
+/* ----- busca de candidatos ----- */
+function candSearch(inp,box,onPick){
+  let hl=-1,items=[];
+  const draw=()=>{
+    const q=norm(inp.value.trim());if(!q){box.classList.remove('on');return}
+    const d=depD();items=d.cands.filter(c=>c.key.includes(q)).slice(0,8);
+    box.innerHTML=items.length?items.map((c,i)=>`<button data-i="${c.i}" class="${i===hl?'hl':''}"><span>${title(c.nu)} <small style="color:var(--tx3)">${d.parties[c.p].sg} · ${c.n}</small></span><span class="tag ${c.e?'ok':'mut'}">${fmt(c.v)}</span></button>`).join(''):'<div class="empty" style="padding:16px">Sem resultados</div>';
+    box.classList.add('on');
+  };
+  const pick=i=>{inp.value='';box.classList.remove('on');onPick(i)};
+  inp.addEventListener('input',()=>{hl=-1;draw()});
+  inp.addEventListener('keydown',e=>{if(e.key==='ArrowDown'){hl=Math.min(items.length-1,hl+1);draw();e.preventDefault()}else if(e.key==='ArrowUp'){hl=Math.max(0,hl-1);draw();e.preventDefault()}else if(e.key==='Enter'&&items.length)pick(items[Math.max(0,hl)].i);else if(e.key==='Escape'){box.classList.remove('on');inp.blur()}});
+  box.addEventListener('mousedown',e=>{const b=e.target.closest('button');if(b){e.preventDefault();pick(+b.dataset.i)}});
+  inp.addEventListener('blur',()=>setTimeout(()=>box.classList.remove('on'),120));
+}
+
+/* ----- eventos ----- */
+function depSwitch(cg){
+  if(cg===DEPS.cg)return;
+  DEPS.cg=cg;DEPS.sel=0;DEPS.munSel=null;DEPS.party='all';DEPS.page=0;DEPS.all=false;depSig=null;depCmpSig=null;
+  $('#depMap').dataset.cg='';renderDeps();
+}
+candSearch($('#depMapSearch'),$('#depMapSugg'),i=>{DEPS.sel=i;DEPS.munSel=null;renderDepMap()});
+candSearch($('#depCmpSearch'),$('#depCmpSugg'),i=>depToggleCmp(i));
+$('#depCargo').onclick=e=>{const b=e.target.closest('button');if(b)depSwitch(b.dataset.c)};
+$('#depMetric').onclick=e=>{const b=e.target.closest('button');if(b){DEPS.metric=b.dataset.m;renderDepMap()}};
+$('#depElMore').onclick=()=>{DEPS.all=!DEPS.all;renderDepElected()};
+$('#depQ').oninput=e=>{DEPS.q=e.target.value;DEPS.page=0;renderDepTable()};
+$('#depParty').onchange=e=>{DEPS.party=e.target.value;DEPS.page=0;renderDepTable()};
+$('#depOnly').onclick=e=>{const b=e.target.closest('.chip');if(!b)return;DEPS.only=b.dataset.f;DEPS.page=0;$$('#depOnly .chip').forEach(c=>c.classList.toggle('on',c===b));renderDepTable()};
+$('#depTbl').onclick=e=>{
+  const th=e.target.closest('th');
+  if(th){const k=th.dataset.k;DEPS.dir=DEPS.sort===k?-DEPS.dir:(k==='nu'||k==='sg'||k==='rank'||k==='n'?1:-1);DEPS.sort=k;DEPS.page=0;renderDepTable();return}
+  const tr=e.target.closest('tbody tr');if(tr&&tr.dataset.i)openCand(+tr.dataset.i);
+};
+$('#depPbtn').onclick=e=>{if(e.target.id==='depPp')DEPS.page--;if(e.target.id==='depPn')DEPS.page++;renderDepTable()};
+$('#depExp').onclick=()=>{
+  const d=depD(),rows=depFiltered();
+  const csv=['posicao;numero;candidato;partido;votos;pct_validos;situacao',...rows.map(c=>[c.rank,c.n,c.nu,d.parties[c.p].sg,c.v,c.pc.toFixed(2).replace('.',','),depStatus(c)].join(';'))].join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv'}));a.download=`deputados_${DEPS.cg}.csv`;a.click();
+};
+$('#v-deps').addEventListener('click',e=>{
+  const ec=e.target.closest('.ec');if(ec){openCand(+ec.dataset.i);return}
+  const li=e.target.closest('.rank li');if(li){if(li.dataset.mun)depPickMun(li.dataset.mun);else if(li.dataset.i)openCand(+li.dataset.i);return}
+  const rm=e.target.closest('[data-rm]');if(rm){depToggleCmp(+rm.dataset.rm);return}
+  const pre=e.target.closest('[data-dpre]');
+  if(pre){const d=depD();
+    DEPS.cmp[DEPS.cg]=pre.dataset.dpre==='top'?[0,1,2,3]:d.order.slice(0,4).map(pi=>d.cands.find(c=>c.p===pi).i);
+    renderDepCompare();
+  }
+});
+$('#drawer').addEventListener('click',e=>{const li=e.target.closest('li[data-pick]');if(li){const i=+li.dataset.pick,code=li.dataset.mun;closeDrawer();DEPS.sel=i;DEPS.munSel=code;depGoDeps(()=>{renderDepMap();$('#depMap').scrollIntoView({behavior:'smooth',block:'center'})})}});
