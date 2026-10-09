@@ -11,6 +11,7 @@ $('#v-compare').addEventListener('click',e=>{
   const p=e.target.closest('[data-pre]');if(p){const k=p.dataset.pre;
     CMP=(k==='big'?[...D].sort((x,y)=>y.t-x.t):k==='close'?[...D].sort((x,y)=>Math.abs(x.pa-50)-Math.abs(y.pa-50)):k==='a'?[...D].sort((x,y)=>y.a-x.a):[...D].sort((x,y)=>y.b-x.b)).slice(0,4).map(d=>d.code);renderCompare()}
 });
+let cmpSig=null; // evita reanimar os cards quando so o tema muda
 function renderCompare(){
   $('#sels').innerHTML=CMP.map(c=>`<span class="sel">${title(byCode[c].name)}<button data-c="${c}" aria-label="Remover">×</button></span>`).join('');
   const body=$('#cmpBody');
@@ -19,18 +20,19 @@ function renderCompare(){
   body.innerHTML=`<div class="grid cgrid" style="margin-top:16px" id="ccards">
     ${[...ds,{name:'MARANHÃO (ESTADO)',a:ST.a,b:ST.b,t:ST.t,pa:ST.pa,pb:ST.pb,diff:ST.diff,lead:ST.diff>0?'a':'b',state:1}].map((d,i)=>`<div class="card ccard" ${d.state?'style="border-style:dashed"':''}>
       <div class="nm" style="${d.state?'':`border-left:4px solid ${CC[i]};padding-left:10px`}">${title(d.name)}</div>
-      <div class="bar" style="margin:12px 0;height:10px"><i class="a" style="width:${d.pa}%"></i><i class="b" style="width:${d.pb}%"></i></div>
-      <div class="row"><span>Braide</span><b class="num">${pp(d.pa)}% · ${fmt(d.a)}</b></div>
-      <div class="row"><span>Orleans</span><b class="num">${pp(d.pb)}% · ${fmt(d.b)}</b></div>
-      <div class="row"><span>Diferença</span><b class="num ${d.diff>0?'pos':'neg'}">${d.diff>0?'+':'−'}${fmt(Math.abs(d.diff))}</b></div>
-      <div class="row"><span>Votos válidos</span><b class="num">${fmt(d.t)}</b></div>
-      ${d.state?`<div class="row"><span>Municípios</span><b>${ST.wa} × ${ST.wb}</b></div>`:`<div class="row"><span>% do estado</span><b class="num">${pc(d.t/ST.t*100,2)}</b></div>`}
+      <div class="bar" style="margin:12px 0;height:10px"><i class="a" style="width:${d.pa}%" data-w="${d.pa}"></i><i class="b" style="width:${d.pb}%" data-w="${d.pb}"></i></div>
+      <div class="row"><span>Braide</span><b class="num"><span data-to="${d.pa}" data-kind="pct1">${pp(d.pa)}%</span> · <span data-to="${d.a}" data-kind="int">${fmt(d.a)}</span></b></div>
+      <div class="row"><span>Orleans</span><b class="num"><span data-to="${d.pb}" data-kind="pct1">${pp(d.pb)}%</span> · <span data-to="${d.b}" data-kind="int">${fmt(d.b)}</span></b></div>
+      <div class="row"><span>Diferença</span><b class="num ${d.diff>0?'pos':'neg'}"><span data-to="${Math.abs(d.diff)}" data-kind="int" data-pre="${d.diff>0?'+':'−'}">${d.diff>0?'+':'−'}${fmt(Math.abs(d.diff))}</span></b></div>
+      <div class="row"><span>Votos válidos</span><b class="num" data-to="${d.t}" data-kind="int">${fmt(d.t)}</b></div>
+      ${d.state?`<div class="row"><span>Municípios</span><b><span data-to="${ST.wa}" data-kind="int">${ST.wa}</span> × <span data-to="${ST.wb}" data-kind="int">${ST.wb}</span></b></div>`:`<div class="row"><span>% do estado</span><b class="num" data-to="${d.t/ST.t*100}" data-kind="pct2">${pc(d.t/ST.t*100,2)}</b></div>`}
     </div>`).join('')}</div>
     <div class="grid g2" style="margin-top:16px">
       <div class="card"><h3>Percentual de votos</h3><p class="sub">Comparado à média do estado</p><div class="ch"><canvas id="cmp1"></canvas></div></div>
       <div class="card"><h3>Votos absolutos</h3><p class="sub">Braide × Orleans em cada município</p><div class="ch"><canvas id="cmp2"></canvas></div></div>
     </div>
     ${ds.length>1?`<div class="card" style="margin-top:16px"><h3>Leitura rápida</h3><p class="sub" style="margin:6px 0 0;font-size:13px">${cmpText(ds)}</p></div>`:''}`;
+  const sig=CMP.join(',');if(cmpSig!==sig){cmpSig=sig;animateIn($('#ccards'),1100)}
   const A=css('--a'),B=css('--b'),L=ds.map(d=>title(d.name));
   mk('cmp1',{type:'bar',data:{labels:L,datasets:[{label:'% Braide',data:ds.map(d=>d.pa),backgroundColor:A,borderRadius:7},{label:'% Orleans',data:ds.map(d=>d.pb),backgroundColor:B,borderRadius:7},{type:'line',label:'Média do estado (Braide)',data:ds.map(()=>ST.pa),borderColor:css('--tx2'),borderDash:[6,5],pointRadius:0,borderWidth:2}]},
     options:baseOpts({scales:{x:{grid:{display:false},ticks:{color:css('--tx2')},border:{display:false}},y:{min:0,max:100,grid:{color:css('--line')},ticks:{color:css('--tx2'),callback:v=>v+'%'},border:{display:false}}}})});

@@ -1,15 +1,15 @@
 /* ---------- overview ---------- */
 function renderOverview(){
-  $('#hA').textContent=pc(ST.pa,2);$('#hB').textContent=pc(ST.pb,2);
-  requestAnimationFrame(()=>{$('#barA').style.width=ST.pa+'%';$('#barB').style.width=ST.pb+'%'});
+  [['#hA',ST.pa],['#hB',ST.pb]].forEach(([s,v])=>{const e=$(s);e.dataset.to=v;e.dataset.kind='pct2';e.textContent=pc(v,2)});
+  $('#barA').dataset.w=ST.pa;$('#barB').dataset.w=ST.pb;
   const lead=ST.diff>0?'Braide':'Orleans';
-  $('#heroFoot').innerHTML=`<span><b class="num">${fmt(ST.a)}</b> votos de Braide</span><span><b class="num">${fmt(ST.b)}</b> votos de Orleans</span><span>Vantagem de <b class="num">${fmt(Math.abs(ST.diff))}</b> votos para <b>${lead}</b> (${pp(Math.abs(ST.pa-ST.pb))} p.p.)</span><span><b>${D.length}</b> municípios apurados</span>`;
+  $('#heroFoot').innerHTML=`<span><b class="num" data-to="${ST.a}" data-kind="int">${fmt(ST.a)}</b> votos de Braide</span><span><b class="num" data-to="${ST.b}" data-kind="int">${fmt(ST.b)}</b> votos de Orleans</span><span>Vantagem de <b class="num" data-to="${Math.abs(ST.diff)}" data-kind="int">${fmt(Math.abs(ST.diff))}</b> votos para <b>${lead}</b> (${pp(Math.abs(ST.pa-ST.pb))} p.p.)</span><span><b data-to="${D.length}" data-kind="int">${D.length}</b> municípios apurados</span>`;
   const kp=[
-   ['a','Votos Braide',fmt(ST.a),`${pc(ST.pa)} do total entre os dois`],
-   ['b','Votos Orleans',fmt(ST.b),`${pc(ST.pb)} do total entre os dois`],
+   ['a','Votos Braide',ST.a,`${pc(ST.pa)} do total entre os dois`],
+   ['b','Votos Orleans',ST.b,`${pc(ST.pb)} do total entre os dois`],
    ['a','Municípios de Braide',ST.wa,`${pc(ST.wa/D.length*100)} dos municípios`],
    ['b','Municípios de Orleans',ST.wb,`${pc(ST.wb/D.length*100)} dos municípios`]];
-  $('#kpis').innerHTML=kp.map(k=>`<div class="card kpi"><div class="lbl"><span class="dot" style="background:var(--${k[0]})"></span>${k[1]}</div><div class="val num">${k[2]}</div><div class="ft">${k[3]}</div></div>`).join('');
+  $('#kpis').innerHTML=kp.map(k=>`<div class="card kpi"><div class="lbl"><span class="dot" style="background:var(--${k[0]})"></span>${k[1]}</div><div class="val num" data-to="${k[2]}" data-kind="int">${fmt(k[2])}</div><div class="ft">${k[3]}</div></div>`).join('');
   const li=(arr,key)=>arr.map((d,i)=>{const m=Math.abs(d.diff),mx=Math.abs(arr[0].diff);return `<li data-c="${d.code}"><span class="n">${String(i+1).padStart(2,'0')}</span><span><b>${title(d.name)}</b></span><span class="num ${key==='a'?'pos':'neg'}">+${fmt(m)}</span><span></span><div class="bg"><i style="width:${m/mx*100}%;background:var(--${key})"></i></div></li>`}).join('');
   $('#topA').innerHTML=li([...D].sort((x,y)=>y.diff-x.diff).slice(0,10),'a');
   $('#topB').innerHTML=li([...D].sort((x,y)=>x.diff-y.diff).slice(0,10),'b');
@@ -17,3 +17,28 @@ function renderOverview(){
 const SMALL=new Set(['DA','DE','DO','DAS','DOS','DOS','E']);
 const title=s=>s.toLowerCase().split(' ').map((w,i)=>SMALL.has(w.toUpperCase())&&i?w:w.split('-').map(x=>x.charAt(0).toUpperCase()+x.slice(1)).join('-')).join(' ');
 document.addEventListener('click',e=>{const li=e.target.closest('.rank li');if(li)openDrawer(li.dataset.c)});
+/* anima barras (data-w = % final) e contagem de numeros (data-to, data-kind, data-pre) dentro de root */
+const easeOutExpo=k=>k>=1?1:1-Math.pow(2,-10*k);
+const countFmt={pct1:v=>pp(v)+'%',pct2:v=>pc(v,2),int:v=>fmt(v)};
+const countRafs=new WeakMap();
+const reduceMotion=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
+function animateIn(root,ms=1100){
+  if(!root)return;
+  const els=$$('[data-to]',root),bars=$$('[data-w]',root);
+  cancelAnimationFrame(countRafs.get(root));
+  const txt=(e,k)=>{e.textContent=(e.dataset.pre||'')+countFmt[e.dataset.kind](+e.dataset.to*k)};
+  const finish=()=>{els.forEach(e=>txt(e,1));bars.forEach(b=>{b.style.transition='';b.style.width=b.dataset.w+'%'})};
+  if(reduceMotion()){finish();return}
+  bars.forEach(b=>{b.style.transition='none';b.style.width='0%'});
+  els.forEach(e=>txt(e,0));
+  void root.offsetWidth;
+  const t0=performance.now();
+  const step=now=>{
+    const k=Math.min(1,(now-t0)/ms),e=easeOutExpo(k);
+    bars.forEach(b=>b.style.width=+b.dataset.w*e+'%');
+    els.forEach(el=>txt(el,e));
+    if(k<1)countRafs.set(root,requestAnimationFrame(step));else finish();
+  };
+  countRafs.set(root,requestAnimationFrame(step));
+}
+function animateHero(){animateIn($('#v-overview'),1500)}

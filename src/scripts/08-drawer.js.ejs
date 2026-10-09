@@ -5,17 +5,17 @@ function openDrawer(code){
   $('#drawer').innerHTML=`<button class="icon-btn x" onclick="closeDrawer()" aria-label="Fechar">✕</button>
    <span class="tag ${d.lead}">Lidera: ${NAME[d.lead]}</span>
    <h2>${title(d.name)}</h2><p style="color:var(--tx2);font-size:13px">Código TSE ${d.code}</p>
-   <div class="bar" style="margin-top:20px"><i class="a" style="width:${d.pa}%"></i><i class="b" style="width:${d.pb}%"></i></div>
-   <div style="display:flex;justify-content:space-between;margin-top:8px;font-weight:700"><span style="color:var(--a)">${pc(d.pa,2)}</span><span style="color:var(--b)">${pc(d.pb,2)}</span></div>
+   <div class="bar" style="margin-top:20px"><i class="a" style="width:${d.pa}%" data-w="${d.pa}"></i><i class="b" style="width:${d.pb}%" data-w="${d.pb}"></i></div>
+   <div style="display:flex;justify-content:space-between;margin-top:8px;font-weight:700"><span style="color:var(--a)" data-to="${d.pa}" data-kind="pct2">${pc(d.pa,2)}</span><span style="color:var(--b)" data-to="${d.pb}" data-kind="pct2">${pc(d.pb,2)}</span></div>
    <div class="stat">
-     <div><small>Braide</small><b class="num">${fmt(d.a)}</b></div><div><small>Orleans</small><b class="num">${fmt(d.b)}</b></div>
-     <div><small>Diferença</small><b class="num ${d.diff>0?'pos':'neg'}">${d.diff>0?'+':'−'}${fmt(Math.abs(d.diff))}</b></div><div><small>Votos válidos</small><b class="num">${fmt(d.t)}</b></div>
+     <div><small>Braide</small><b class="num" data-to="${d.a}" data-kind="int">${fmt(d.a)}</b></div><div><small>Orleans</small><b class="num" data-to="${d.b}" data-kind="int">${fmt(d.b)}</b></div>
+     <div><small>Diferença</small><b class="num ${d.diff>0?'pos':'neg'}"><span data-to="${Math.abs(d.diff)}" data-kind="int" data-pre="${d.diff>0?'+':'−'}">${d.diff>0?'+':'−'}${fmt(Math.abs(d.diff))}</span></b></div><div><small>Votos válidos</small><b class="num" data-to="${d.t}" data-kind="int">${fmt(d.t)}</b></div>
      <div><small>Ranking por porte</small><b class="num">${ranks[d.code].size}º <span style="font-size:12px;color:var(--tx3)">de ${D.length}</span></b></div>
      <div><small>Ranking de equilíbrio</small><b class="num">${ranks[d.code].marg}º <span style="font-size:12px;color:var(--tx3)">de ${D.length}</span></b></div>
    </div>
    <div class="card" style="box-shadow:none;background:var(--bg2);border:0"><h3>Versus média do estado</h3><p class="sub" style="margin-bottom:0">Braide ${d.pa>=ST.pa?'acima':'abaixo'} da média estadual (${pc(ST.pa)}) em <b>${pp(Math.abs(d.pa-ST.pa))} p.p.</b><br>Representa <b>${pc(d.t/ST.t*100,2)}</b> do total de votos.</p></div>
    <div style="display:flex;gap:8px;margin-top:18px;flex-wrap:wrap"><button class="btn pri" onclick="toggleCmp('${d.code}',true)">${inCmp?'Remover da comparação':'+ Comparar'}</button><a class="btn" href="${d.src}" target="_blank" rel="noopener" style="text-decoration:none">Fonte TSE ↗</a></div>`;
-  $('#drawer').classList.add('on');$('#scrim').classList.add('on');$('#drawer').setAttribute('aria-hidden','false');
+  $('#drawer').classList.add('on');animateIn($('#drawer'),900);$('#scrim').classList.add('on');$('#drawer').setAttribute('aria-hidden','false');
 }
 function closeDrawer(){$('#drawer').classList.remove('on');$('#scrim').classList.remove('on');$('#drawer').setAttribute('aria-hidden','true')}
 $('#scrim').onclick=closeDrawer;
