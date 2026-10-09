@@ -1,0 +1,4 @@
+/* ---------- theme ---------- */
+const savedTheme=(()=>{try{return localStorage.getItem('theme')}catch(e){return null}})();
+document.documentElement.dataset.theme = savedTheme || (matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
+$('#theme').onclick=()=>{const n=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=n;try{localStorage.setItem('theme',n)}catch(e){};renderCharts()};

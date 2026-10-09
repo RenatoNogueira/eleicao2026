@@ -1,0 +1,3 @@
+/* ---------- nav ---------- */
+function go(v){$$('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));$$('.view').forEach(s=>s.classList.toggle('on',s.id==='v-'+v));history.replaceState(null,'','#'+v);renderCharts();scrollTo({top:0})}
+$('#nav').onclick=e=>{const b=e.target.closest('button');if(b)go(b.dataset.v)};

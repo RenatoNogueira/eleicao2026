@@ -1,0 +1,41 @@
+/* ---------- charts ---------- */
+const charts={};
+function mk(id,cfg){charts[id]?.destroy();const el=$('#'+id);if(!el||!el.offsetParent)return;charts[id]=new Chart(el,cfg)}
+function baseOpts(extra={}){
+  const tx=css('--tx2'),ln=css('--line');
+  return {responsive:true,maintainAspectRatio:false,animation:{duration:700},
+    plugins:{legend:{labels:{color:tx,usePointStyle:true,boxWidth:8,font:{family:'Inter',size:12}}},tooltip:{backgroundColor:css('--card-solid'),titleColor:css('--tx'),bodyColor:css('--tx2'),borderColor:ln,borderWidth:1,padding:12,cornerRadius:10,titleFont:{family:'Inter',weight:'700'},bodyFont:{family:'Inter'}}},
+    scales:{x:{ticks:{color:tx,font:{family:'Inter',size:11}},grid:{display:false},border:{display:false}},y:{ticks:{color:tx,font:{family:'Inter',size:11}},grid:{color:ln},border:{display:false}}},...extra};
+}
+function renderCharts(){
+  Chart.defaults.font.family='Inter';
+  const A=css('--a'),B=css('--b');
+  /* histogram */
+  const bins=Array.from({length:10},(_,i)=>({lo:i*10,n:0}));
+  D.forEach(d=>bins[Math.min(9,Math.floor(d.pa/10))].n++);
+  mk('cHist',{type:'bar',data:{labels:bins.map(b=>`${b.lo}–${b.lo+10}%`),datasets:[{label:'Municípios',data:bins.map(b=>b.n),borderRadius:8,backgroundColor:bins.map(b=>b.lo>=50?A:B)}]},
+    options:baseOpts({plugins:{legend:{display:false},tooltip:{...baseOpts().plugins.tooltip,callbacks:{title:i=>`Braide entre ${i[0].label}`,label:c=>` ${c.raw} municípios`}}}})});
+  mk('cWon',{type:'doughnut',data:{labels:['Braide','Orleans'],datasets:[{data:[ST.wa,ST.wb],backgroundColor:[A,B],borderWidth:0,spacing:3,borderRadius:6}]},
+    options:{...baseOpts(),cutout:'72%',scales:{}}});
+  /* bands */
+  const bv=BANDS.map(()=>({a:0,b:0,wa:0,wb:0}));
+  D.forEach(d=>{const i=bandOf(d);bv[i].a+=d.a;bv[i].b+=d.b;bv[i]['w'+d.lead]++});
+  const L=BANDS.map(b=>b[0]);
+  mk('cBandVotes',{type:'bar',data:{labels:L,datasets:[{label:'Braide',data:bv.map(x=>x.a),backgroundColor:A,borderRadius:6},{label:'Orleans',data:bv.map(x=>x.b),backgroundColor:B,borderRadius:6}]},
+    options:baseOpts({plugins:{...baseOpts().plugins,tooltip:{...baseOpts().plugins.tooltip,callbacks:{label:c=>` ${c.dataset.label}: ${fmt(c.raw)} votos`}}}})});
+  mk('cBandWins',{type:'bar',data:{labels:L,datasets:[{label:'Braide',data:bv.map(x=>x.wa),backgroundColor:A,borderRadius:6},{label:'Orleans',data:bv.map(x=>x.wb),backgroundColor:B,borderRadius:6}]},
+    options:baseOpts({scales:{x:{stacked:true,grid:{display:false},ticks:{color:css('--tx2')},border:{display:false}},y:{stacked:true,grid:{color:css('--line')},ticks:{color:css('--tx2')},border:{display:false}}}})});
+  /* scatter */
+  const pts=l=>D.filter(d=>d.lead===l).map(d=>({x:d.t,y:d.pa,d}));
+  mk('cScatter',{type:'scatter',data:{datasets:[{label:'Braide lidera',data:pts('a'),backgroundColor:A+'cc',pointRadius:5,pointHoverRadius:8},{label:'Orleans lidera',data:pts('b'),backgroundColor:B+'cc',pointRadius:5,pointHoverRadius:8}]},
+    options:baseOpts({scales:{x:{type:'logarithmic',title:{display:true,text:'Votos válidos no município (escala log)',color:css('--tx2')},ticks:{color:css('--tx2'),callback:v=>[3000,10000,30000,100000,300000].includes(v)?fmt(v):''},grid:{color:css('--line')},border:{display:false}},y:{min:0,max:100,title:{display:true,text:'% Braide',color:css('--tx2')},ticks:{color:css('--tx2'),callback:v=>v+'%'},grid:{color:css('--line')},border:{display:false}}},
+      onClick:(e,els)=>{if(els.length){const p=charts.cScatter.data.datasets[els[0].datasetIndex].data[els[0].index];openDrawer(p.d.code)}},
+      onHover:(e,els)=>{e.native.target.style.cursor=els.length?'pointer':'default'},
+      plugins:{...baseOpts().plugins,tooltip:{...baseOpts().plugins.tooltip,callbacks:{title:i=>title(i[0].raw.d.name),label:c=>[` Braide ${pc(c.raw.d.pa)} · Orleans ${pc(c.raw.d.pb)}`,` ${fmt(c.raw.x)} votos`]}}}})});
+  /* concentration */
+  const s=[...D].sort((x,y)=>y.t-x.t);let acc=0;const cum=s.map(d=>acc+=d.t);
+  const N=[1,3,5,10,20,50,100,D.length];
+  mk('cConc',{type:'bar',data:{labels:N.map(n=>n===D.length?'Todos':'Top '+n),datasets:[{label:'% acumulado dos votos',data:N.map(n=>cum[n-1]/ST.t*100),borderRadius:8,backgroundColor:css('--a')+'bb'}]},
+    options:baseOpts({plugins:{legend:{display:false},tooltip:{...baseOpts().plugins.tooltip,callbacks:{label:c=>` ${pc(c.raw)} dos votos`}}},scales:{x:{grid:{display:false},ticks:{color:css('--tx2')},border:{display:false}},y:{max:100,grid:{color:css('--line')},ticks:{color:css('--tx2'),callback:v=>v+'%'},border:{display:false}}}})});
+  if($('#v-compare').classList.contains('on'))renderCompare();
+}

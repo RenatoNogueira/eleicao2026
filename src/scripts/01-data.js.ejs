@@ -1,0 +1,16 @@
+/* ---------- data ---------- */
+const D = RAW.map(r=>{const t=r.a+r.b;return {code:r.c,name:r.n,a:r.a,b:r.b,t,pa:r.a/t*100,pb:r.b/t*100,diff:r.a-r.b,lead:r.a>r.b?'a':'b',src:r.s}});
+const ST = (()=>{const a=D.reduce((s,d)=>s+d.a,0),b=D.reduce((s,d)=>s+d.b,0),t=a+b;return {a,b,t,pa:a/t*100,pb:b/t*100,diff:a-b,wa:D.filter(d=>d.lead==='a').length,wb:D.filter(d=>d.lead==='b').length}})();
+const byCode = Object.fromEntries(D.map(d=>[d.code,d]));
+const fmt = n=>Math.round(n).toLocaleString('pt-BR');
+const pc = (n,d=1)=>n.toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d})+'%';
+const pp = n=>n.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1});
+const norm = s=>s.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+const $ = (s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const css = v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const NAME={a:'Braide',b:'Orleans'};
+const ranks = {}; // positions
+[['size',d=>-d.t],['marg',d=>-Math.abs(d.diff)]].forEach(([k,f])=>{[...D].sort((x,y)=>f(x)-f(y)).forEach((d,i)=>{(ranks[d.code]??={})[k]=i+1})});
+
+const BANDS=[['< 5 mil',0,5000],['5–10 mil',5000,10000],['10–20 mil',10000,20000],['20–50 mil',20000,50000],['> 50 mil',50000,1e12]];
+const bandOf = d=>BANDS.findIndex(b=>d.t>=b[1]&&d.t<b[2]);

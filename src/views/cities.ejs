@@ -1,0 +1,19 @@
+<section class="view" id="v-cities">
+  <div class="toolbar">
+    <input class="input" id="q" placeholder="Filtrar por nome ou código…" style="min-width:240px">
+    <div class="chips" id="fLead">
+      <button class="chip on" data-f="all">Todos</button>
+      <button class="chip a" data-f="a">Braide</button>
+      <button class="chip b" data-f="b">Orleans</button>
+      <button class="chip" data-f="close">Disputados (&lt;5 p.p.)</button>
+    </div>
+    <select class="input" id="fSize">
+      <option value="all">Qualquer porte</option>
+    </select>
+    <span class="sp"></span>
+    <span id="count" style="font-size:13px;color:var(--tx2)"></span>
+    <button class="btn" id="exp">⬇ Exportar CSV</button>
+  </div>
+  <div class="tbl-wrap"><table id="tbl"><thead></thead><tbody></tbody></table></div>
+  <div class="pager"><span id="pinfo"></span><div id="pbtn"></div></div>
+</section>

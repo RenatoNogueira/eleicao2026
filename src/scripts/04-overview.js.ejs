@@ -1,0 +1,19 @@
+/* ---------- overview ---------- */
+function renderOverview(){
+  $('#hA').textContent=pc(ST.pa,2);$('#hB').textContent=pc(ST.pb,2);
+  requestAnimationFrame(()=>{$('#barA').style.width=ST.pa+'%';$('#barB').style.width=ST.pb+'%'});
+  const lead=ST.diff>0?'Braide':'Orleans';
+  $('#heroFoot').innerHTML=`<span><b class="num">${fmt(ST.a)}</b> votos de Braide</span><span><b class="num">${fmt(ST.b)}</b> votos de Orleans</span><span>Vantagem de <b class="num">${fmt(Math.abs(ST.diff))}</b> votos para <b>${lead}</b> (${pp(Math.abs(ST.pa-ST.pb))} p.p.)</span><span><b>${D.length}</b> municípios apurados</span>`;
+  const kp=[
+   ['a','Votos Braide',fmt(ST.a),`${pc(ST.pa)} do total entre os dois`],
+   ['b','Votos Orleans',fmt(ST.b),`${pc(ST.pb)} do total entre os dois`],
+   ['a','Municípios de Braide',ST.wa,`${pc(ST.wa/D.length*100)} dos municípios`],
+   ['b','Municípios de Orleans',ST.wb,`${pc(ST.wb/D.length*100)} dos municípios`]];
+  $('#kpis').innerHTML=kp.map(k=>`<div class="card kpi"><div class="lbl"><span class="dot" style="background:var(--${k[0]})"></span>${k[1]}</div><div class="val num">${k[2]}</div><div class="ft">${k[3]}</div></div>`).join('');
+  const li=(arr,key)=>arr.map((d,i)=>{const m=Math.abs(d.diff),mx=Math.abs(arr[0].diff);return `<li data-c="${d.code}"><span class="n">${String(i+1).padStart(2,'0')}</span><span><b>${title(d.name)}</b></span><span class="num ${key==='a'?'pos':'neg'}">+${fmt(m)}</span><span></span><div class="bg"><i style="width:${m/mx*100}%;background:var(--${key})"></i></div></li>`}).join('');
+  $('#topA').innerHTML=li([...D].sort((x,y)=>y.diff-x.diff).slice(0,10),'a');
+  $('#topB').innerHTML=li([...D].sort((x,y)=>x.diff-y.diff).slice(0,10),'b');
+}
+const SMALL=new Set(['DA','DE','DO','DAS','DOS','DOS','E']);
+const title=s=>s.toLowerCase().split(' ').map((w,i)=>SMALL.has(w.toUpperCase())&&i?w:w.split('-').map(x=>x.charAt(0).toUpperCase()+x.slice(1)).join('-')).join(' ');
+document.addEventListener('click',e=>{const li=e.target.closest('.rank li');if(li)openDrawer(li.dataset.c)});
