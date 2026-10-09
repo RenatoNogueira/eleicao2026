@@ -1,4 +1,4 @@
-# Painel Governador MA 2026
+# Dashboard MA
 
 `public/index.html` é **gerado** (não versionado) — não edite à mão. Edite `src/` e rode:
 
