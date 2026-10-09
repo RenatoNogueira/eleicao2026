@@ -1,8 +1,9 @@
 <section class="view" id="v-deps">
   <div class="toolbar">
     <div class="seg" id="depCargo">
-      <button data-c="federal" class="on">Deputado Federal</button>
-      <button data-c="estadual">Deputado Estadual</button>
+      <button data-c="federal" class="on"><span class="lg">Deputado</span><span class="sm">Dep.</span> Federal</button>
+      <button data-c="estadual"><span class="lg">Deputado</span><span class="sm">Dep.</span> Estadual</button>
+      <button data-c="senador">Senador</button>
     </div>
     <span class="sp"></span>
     <span id="depNote" style="font-size:13px;color:var(--tx2)"></span>
@@ -21,7 +22,7 @@
 
   <div class="sec-title">Partidos e federações</div>
   <div class="grid g2">
-    <div class="card"><h3>Votos por partido</h3><p class="sub">Votos nominais + votos de legenda (12 maiores)</p><div class="ch tall"><canvas id="dChVotes"></canvas></div></div>
+    <div class="card"><h3>Votos por partido</h3><p class="sub" id="depVotesSub">Votos nominais + votos de legenda (12 maiores)</p><div class="ch tall"><canvas id="dChVotes"></canvas></div></div>
     <div class="card"><h3>Cadeiras conquistadas</h3><p class="sub" id="depSeatsSub">Eleitos por partido</p><div class="ch tall"><canvas id="dChSeats"></canvas></div></div>
   </div>
 

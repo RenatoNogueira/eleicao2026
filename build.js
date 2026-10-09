@@ -51,8 +51,8 @@ function build() {
   fs.mkdirSync(PUBLIC_DIR, { recursive: true });
   fs.writeFileSync(path.join(PUBLIC_DIR, 'favicon.svg'), iconSvg, 'utf8');
   const iconUri = 'data:image/svg+xml;base64,' + Buffer.from(iconSvg).toString('base64');
-  const dep = k => fs.readFileSync(path.join(ROOT, 'data', `deputados_${k}.json`), 'utf8').trim();
-  const html = ejs.render(fs.readFileSync(tpl, 'utf8'), { data, mapJson, gaId, flagUri, iconUri, depFederal: dep('federal'), depEstadual: dep('estadual') }, { filename: tpl });
+  const dep = k => fs.readFileSync(path.join(ROOT, 'data', `legislativo_${k}.json`), 'utf8').trim();
+  const html = ejs.render(fs.readFileSync(tpl, 'utf8'), { data, mapJson, gaId, flagUri, iconUri, depFederal: dep('federal'), depEstadual: dep('estadual'), depSenador: dep('senador') }, { filename: tpl });
   fs.mkdirSync(PUBLIC_DIR, { recursive: true });
   fs.writeFileSync(path.join(PUBLIC_DIR, 'index.html'), html, 'utf8');
   console.log(`public/index.html gerado: ${(html.length / 1024).toFixed(1)} KB, ${data.length} municipios`);

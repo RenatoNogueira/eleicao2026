@@ -1,5 +1,5 @@
-/* ---------- deputados (federal e estadual) ---------- */
-const DEPS={cg:'federal',cache:{},q:'',party:'all',only:'all',sort:'v',dir:-1,page:0,per:15,sel:0,metric:'pct',munSel:null,all:false,cmp:{federal:[],estadual:[]}};
+/* ---------- legislativo: deputados (federal e estadual) e senador ---------- */
+const DEPS={cg:'federal',cache:{},q:'',party:'all',only:'all',sort:'v',dir:-1,page:0,per:15,sel:0,metric:'pct',munSel:null,all:false,cmp:{federal:[],estadual:[],senador:[]}};
 let depSig=null,depCmpSig=null;
 const DEP_PAL=['#3b6cff','#f59e0b','#10b981','#a855f7','#ef4444','#06b6d4','#ec4899','#84cc16','#f97316','#6366f1','#14b8a6','#eab308'];
 const DEP_GRAY='#94a3b8';
@@ -21,7 +21,7 @@ const depPhoto=c=>{const d=depD();return `https://resultados.tse.jus.br/oficial/
 const depInitials=n=>{const w=n.split(' ').filter(x=>x.length>2);return (((w[0]||n)[0]||'')+((w[1]||'')[0]||'')).toUpperCase()};
 const depAvatar=(c,sz)=>`<span class="pav" style="--sz:${sz}px"><b>${depInitials(c.nu)}</b><img loading="lazy" alt="" src="${depPhoto(c)}" onerror="this.remove()"></span>`;
 const depParty=c=>{const d=depD();return `<span class="pt"><i style="background:${d.color[c.p]}"></i>${d.parties[c.p].sg}</span>`};
-const depStatus=c=>c.e?(/m[ée]dia/i.test(c.st)?'Eleito (média)':'Eleito (QP)'):c.dv&&c.dv!=='Válido'?'Anulado':c.st==='Suplente'?'Suplente':'Não eleito';
+const depStatus=c=>c.e?(depD().qe===0?'Eleito':/m[ée]dia/i.test(c.st)?'Eleito (média)':'Eleito (QP)'):c.dv&&c.dv!=='Válido'?'Anulado':c.st==='Suplente'?'Suplente':'Não eleito';
 const depTag=c=>`<span class="tag ${c.e?'ok':'mut'}">${depStatus(c)}</span>`;
 const depMunName=code=>byCode[code]?title(byCode[code].name):code;
 const depShare=(c,mi)=>{const d=depD();return d.vv[mi]?d.mv[c.i][mi]/d.vv[mi]*100:0};
@@ -32,11 +32,12 @@ function renderDeps(){
   $$('#depCargo button').forEach(b=>b.classList.toggle('on',b.dataset.c===DEPS.cg));
   $('#depNote').textContent=`Atualizado em ${d.atualizado} · ${pc(d.secoes.apuradas/d.secoes.total*100,0)} das seções apuradas`;
   const g=d.geral,compPct=g.comp/g.aptos*100;
+  const maj=d.qe===0; // eleicao majoritaria (senador): sem quociente nem voto de legenda
   const kp=[
-    ['a','Vagas em disputa',d.vagas,'int',`${d.cands.length} candidatos · quociente eleitoral ${fmt(d.qe)}`],
+    ['a','Vagas em disputa',d.vagas,'int',maj?`${d.cands.length} candidatos · cada eleitor vota em até 2`:`${d.cands.length} candidatos · quociente eleitoral ${fmt(d.qe)}`],
     ['b','Comparecimento',compPct,'pct2',`${fmt(g.comp)} de ${fmt(g.aptos)} eleitores`],
-    ['a','Votos nominais',g.nom,'int',`${pc(g.nom/g.validos*100)} dos votos válidos`],
-    ['b','Votos de legenda',g.leg,'int',`${pc(g.leg/g.validos*100)} dos votos válidos`]];
+    ['a','Votos nominais',g.nom,'int',maj?'soma dos votos (até 2 por eleitor)':`${pc(g.nom/g.validos*100)} dos votos válidos`],
+    maj?['b','Brancos e nulos',g.branco+g.nulo,'int',`${fmt(g.branco)} brancos · ${fmt(g.nulo)} nulos`]:['b','Votos de legenda',g.leg,'int',`${pc(g.leg/g.validos*100)} dos votos válidos`]];
   $('#depKpis').innerHTML=kp.map(k=>`<div class="card kpi"><div class="lbl"><span class="dot" style="background:var(--${k[0]})"></span>${k[1]}</div><div class="val num" data-to="${k[2]}" data-kind="${k[3]}">${countFmt[k[3]](k[2])}</div><div class="ft">${k[4]}</div></div>`).join('');
   renderDepElected();
   renderDepCharts();
@@ -50,8 +51,8 @@ function renderDeps(){
 function renderDepElected(){
   const d=depD(),el=d.cands.filter(c=>c.e),n=el.length,shown=DEPS.all?el:el.slice(0,12);
   const qp=el.filter(c=>!/m[ée]dia/i.test(c.st)).length;
-  $('#depElT').textContent=`${n} ${d.nome.replace('Deputado','deputados').replace('deputados Federal','deputados federais').replace('deputados Estadual','deputados estaduais')} eleitos`;
-  $('#depElS').textContent=`${n} de ${d.vagas} vagas · ${qp} por quociente partidário · ${n-qp} por média`;
+  $('#depElT').textContent=`${n} ${{federal:'deputados federais',estadual:'deputados estaduais',senador:'senadores'}[DEPS.cg]} eleitos`;
+  $('#depElS').textContent=d.qe===0?`${n} de ${d.vagas} vagas · eleição majoritária: cada eleitor votou em até 2 candidatos`:`${n} de ${d.vagas} vagas · ${qp} por quociente partidário · ${n-qp} por média`;
   $('#depElected').innerHTML=shown.map(c=>`<button class="ec" data-i="${c.i}">${depAvatar(c,52)}<span class="ecb"><b>${title(c.nu)}</b>${depParty(c)}<span class="num ecv">${fmt(c.v)} <small>${pp(c.pc)}%</small></span></span><span class="ecr">${c.rank}º</span></button>`).join('');
   const m=$('#depElMore');m.style.display=n>12?'':'none';m.textContent=DEPS.all?'Mostrar menos':`Ver todos os ${n}`;
 }
@@ -59,6 +60,7 @@ function renderDepElected(){
 function renderDepCharts(){
   const d=depD(),tx=css('--tx2'),ln=css('--line');
   const top=d.order.slice(0,12),O=baseOpts();
+  $('#depVotesSub').textContent=d.qe===0?'Votos dos candidatos de cada partido (até 12 maiores)':'Votos nominais + votos de legenda (12 maiores)';
   mk('dChVotes',{type:'bar',data:{labels:top.map(i=>d.parties[i].sg),datasets:[{data:top.map(i=>d.parties[i].tot),backgroundColor:top.map(i=>d.color[i]),borderRadius:6}]},
     options:{...O,indexAxis:'y',plugins:{legend:{display:false},tooltip:{...O.plugins.tooltip,callbacks:{label:c=>{const p=d.parties[top[c.dataIndex]];return [` ${fmt(p.tot)} votos (${pc(p.tot/d.geral.validos*100)})`,` ${fmt(p.nom)} nominais · ${fmt(p.leg)} de legenda`]}}}},
       scales:{x:{grid:{color:ln},ticks:{color:tx,callback:v=>v>=1e6?(v/1e6)+' mi':v>=1e3?(v/1e3)+' mil':v},border:{display:false}},y:{grid:{display:false},ticks:{color:tx},border:{display:false}}}}});
@@ -171,7 +173,7 @@ function openCand(i){
    <p style="margin-top:12px;font-size:13px;color:var(--tx2)">${d.nome} · Nº ${c.n} · ${depParty(c)}${pr.fed?' · federação '+pr.fed:''}</p>
    <div class="stat">
      <div><small>Votos</small><b class="num" data-to="${c.v}" data-kind="int">${fmt(c.v)}</b></div><div><small>% dos válidos</small><b class="num" data-to="${c.pc}" data-kind="pct2">${pc(c.pc,2)}</b></div>
-     <div><small>Posição geral</small><b class="num">${c.rank}º <span style="font-size:12px;color:var(--tx3)">de ${d.cands.length}</span></b></div><div><small>Posição no partido</small><b class="num">${c.prank}º <span style="font-size:12px;color:var(--tx3)">de ${pr.cands}</span></b></div>
+     <div><small>Posição geral</small><b class="num">${c.rank}º <span style="font-size:12px;color:var(--tx3)">de ${d.cands.length}</span></b></div>${d.qe===0?`<div><small>% dos comparecentes</small><b class="num">${pc(c.v/d.geral.comp*100,2)}</b></div>`:`<div><small>Posição no partido</small><b class="num">${c.prank}º <span style="font-size:12px;color:var(--tx3)">de ${pr.cands}</span></b></div>`}
    </div>
    <p class="sub" style="margin:0 0 6px;font-weight:700;color:var(--tx)">Municípios com mais votos</p>
    <ul class="rank">${top.map((m,k)=>`<li data-mun="${m.code}" data-pick="${i}"><span class="n">${String(k+1).padStart(2,'0')}</span><span><b>${depMunName(m.code)}</b></span><span class="num">${fmt(m.v)}</span><span></span><div class="bg"><i style="width:${m.v/mx0*100}%;background:var(--a)"></i></div></li>`).join('')}</ul>
