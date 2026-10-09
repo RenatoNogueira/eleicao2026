@@ -19,6 +19,9 @@ function readCsv(file) {
   });
 }
 
+// ID do Google Analytics (GA4). Sobrescreva com GA_ID=... ou use GA_ID= (vazio) para desativar.
+const gaId = process.env.GA_ID !== undefined ? process.env.GA_ID : 'G-KPKFQ4TD06';
+
 function build() {
   const rows = readCsv(CSV);
   const data = rows.map(r => ({
@@ -36,7 +39,7 @@ function build() {
   if (missing) console.warn(`Aviso: ${missing} municipios sem geometria no mapa`);
 
   const tpl = path.join(SRC, 'index.ejs');
-  const html = ejs.render(fs.readFileSync(tpl, 'utf8'), { data, mapJson }, { filename: tpl });
+  const html = ejs.render(fs.readFileSync(tpl, 'utf8'), { data, mapJson, gaId }, { filename: tpl });
   fs.mkdirSync(PUBLIC_DIR, { recursive: true });
   fs.writeFileSync(path.join(PUBLIC_DIR, 'index.html'), html, 'utf8');
   console.log(`public/index.html gerado: ${(html.length / 1024).toFixed(1)} KB, ${data.length} municipios`);

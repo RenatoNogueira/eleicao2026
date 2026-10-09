@@ -1,0 +1,14 @@
+<% if (gaId) { %><!-- Google tag (gtag.js): so carrega em producao (http/https fora de localhost) -->
+<script>
+  if (/^https?:$/.test(location.protocol) && !/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) {
+    var gs = document.createElement('script');
+    gs.async = true;
+    gs.src = 'https://www.googletagmanager.com/gtag/js?id=<%= gaId %>';
+    document.head.appendChild(gs);
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', '<%= gaId %>');
+  }
+</script>
+<% } %>
