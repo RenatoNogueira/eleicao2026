@@ -5,7 +5,7 @@
   "scripts": {
     "build": "node build.js",
     "watch": "node build.js --watch",
-    "dados:deputados": "node tools/tse-deputados.js"
+    "dados:legislativo": "node tools/tse-deputados.js"
   },
   "devDependencies": {
     "ejs": "^3.1.10"

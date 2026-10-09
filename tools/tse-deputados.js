@@ -1,6 +1,6 @@
-// Baixa do TSE os resultados de Deputado Federal (cargo 6) e Estadual (cargo 7) do Maranhao,
-// por municipio, e gera data/deputados_federal.json e data/deputados_estadual.json.
-// Uso: npm run dados:deputados      (opcional: ELE=6259 UF=ma node tools/tse-deputados.js)
+// Baixa do TSE os resultados de Deputado Federal (cargo 6), Deputado Estadual (cargo 7) e Senador (cargo 5)
+// do Maranhao, por municipio, e gera data/legislativo_<cargo>.json.
+// Uso: npm run dados:legislativo   (opcional: CARGO=senador ELE=6259 UF=ma node tools/tse-deputados.js)
 const fs = require('fs');
 const path = require('path');
 
@@ -11,7 +11,8 @@ const BASE = `https://resultados.tse.jus.br/oficial/ele2026/${ELE}/dados/${UF}`;
 const CARGOS = [
   { id: '6', key: 'federal', nome: 'Deputado Federal' },
   { id: '7', key: 'estadual', nome: 'Deputado Estadual' },
-];
+  { id: '5', key: 'senador', nome: 'Senador' },
+].filter(c => !process.env.CARGO || process.env.CARGO === c.key);
 
 const num = v => (v === undefined || v === '' || v === null ? 0 : parseInt(v, 10) || 0);
 const flt = v => parseFloat(String(v ?? '0').replace(',', '.')) || 0;
@@ -98,7 +99,7 @@ async function main() {
       cands: cands.map(c => ({ id: c.sqcand, n: c.n, nu: c.nmu, nm: c.nm, p: c.pi, v: num(c.vap), pc: flt(c.pvapn), st: c.st || '', e: elected(c) ? 1 : 0, dv: c.dvt })),
       mv, pm,
     };
-    const file = path.join(ROOT, 'data', `deputados_${cg.key}.json`);
+    const file = path.join(ROOT, 'data', `legislativo_${cg.key}.json`);
     fs.writeFileSync(file, JSON.stringify(out));
     const sumNom = cands.reduce((s, c) => s + num(c.vap), 0);
     console.log(`${cg.nome}: ${cands.length} candidatos, ${out.parties.length} partidos, ${out.cands.filter(c => c.e).length} eleitos (vagas ${out.vagas}); votos nominais ${sumNom} (TSE ${out.geral.nom}); ${(fs.statSync(file).size / 1024).toFixed(0)} KB`);
