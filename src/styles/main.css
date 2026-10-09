@@ -218,3 +218,45 @@ body{overflow-x:clip;max-width:100%}
 }
 @media(max-width:380px){nav button{font-size:12px;padding:8px 4px}.hero-foot{font-size:12px}.g4{grid-template-columns:1fr 1fr}.cand .pct{font-size:28px}.kpi .val{font-size:21px}}
 @media print{header,.toolbar,.pager{display:none}}
+/* ---------- animacoes dos cards, skeleton e spinner ---------- */
+:root{--sk:rgba(15,23,42,.07);--sweep:rgba(255,255,255,.65)}
+:root[data-theme=dark]{--sk:rgba(255,255,255,.07);--sweep:rgba(255,255,255,.07)}
+@keyframes rise{from{opacity:0;transform:translateY(14px) scale(.985)}to{opacity:1;transform:none}}
+@keyframes sweep{to{transform:translateX(100%)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{50%{opacity:.55}}
+section.view.on:not(.sk) .card{animation:rise .55s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i,0)*45ms)}
+.card{transition:transform .25s ease,box-shadow .25s ease,border-color .25s ease}
+.kpi:hover,.ccard:hover,.ins:hover{transform:translateY(-3px);border-color:color-mix(in srgb,var(--a) 35%,var(--line))}
+/* estado "renderizando": skeleton nos cards + spinner nos graficos/mapa */
+.view.sk .card{position:relative;overflow:hidden;pointer-events:none}
+.view.sk .card>*{visibility:hidden}
+.view.sk .card>h3,.view.sk .card>.sub{visibility:visible;color:transparent;background:var(--sk);border-radius:6px;width:fit-content;max-width:70%;animation:pulse 1.2s ease-in-out infinite}
+.view.sk .card>.sub{margin-top:8px;min-width:50%}
+.view.sk .card::before{content:"";position:absolute;inset:0;z-index:2;transform:translateX(-100%);background:linear-gradient(90deg,transparent,var(--sweep),transparent);animation:sweep 1.2s ease-in-out infinite}
+.view.sk .card::after{content:"";position:absolute;left:20px;right:20px;top:20px;bottom:20px;border-radius:10px;
+  background:linear-gradient(var(--sk),var(--sk)) 0 0/38% 14px no-repeat,linear-gradient(var(--sk),var(--sk)) 0 30px/70% 34px no-repeat,linear-gradient(var(--sk),var(--sk)) 0 78px/55% 10px no-repeat,linear-gradient(var(--sk),var(--sk)) 0 100px/85% 10px no-repeat}
+.view.sk .card:has(.ch,.mapbox,.tbl-wrap)::after{
+  background:none;left:50%;right:auto;top:calc(50% + 14px);bottom:auto;width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%;
+  border:3px solid var(--sk);border-top-color:var(--a);animation:spin .8s linear infinite}
+.view.sk .hero::after{background:linear-gradient(var(--sk),var(--sk)) 0 0/30% 22px no-repeat,linear-gradient(var(--sk),var(--sk)) 100% 0/30% 22px no-repeat,linear-gradient(var(--sk),var(--sk)) 0 46px/18% 44px no-repeat,linear-gradient(var(--sk),var(--sk)) 100% 46px/18% 44px no-repeat,linear-gradient(var(--sk),var(--sk)) 0 120px/100% 16px no-repeat}
+.view.sk .tbl-wrap,.view.sk .pager,.view.sk .toolbar{opacity:.5}
+.view.sk tbody tr{visibility:hidden}
+/* spinner em botoes/linhas pequenas */
+.spin{display:inline-block;width:14px;height:14px;border-radius:50%;border:2px solid var(--sk);border-top-color:var(--a);animation:spin .7s linear infinite;vertical-align:-2px}
+@media(prefers-reduced-motion:reduce){
+  section.view.on:not(.sk) .card,.view.sk .card::before,.view.sk .card>h3,.view.sk .card>.sub{animation:none!important}
+  .card{transition:none}.view.sk .card:has(.ch,.mapbox,.tbl-wrap)::after{animation-duration:2s}
+}
+.view.sk .tbl-wrap{position:relative;min-height:260px;overflow:hidden}
+.view.sk .tbl-wrap::after{content:"";position:absolute;left:50%;top:50%;width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%;border:3px solid var(--sk);border-top-color:var(--a);animation:spin .8s linear infinite}
+.view.sk .tbl-wrap::before{content:"";position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,var(--sweep),transparent);animation:sweep 1.2s ease-in-out infinite}
+
+/* ---------- barras de progresso (graficos, mapa, tabela e topo da pagina) ---------- */
+.pg{display:none}
+.view.sk .pg{display:flex;flex-direction:column;align-items:center;gap:7px;position:absolute;left:50%;top:calc(50% + 46px);width:min(190px,62%);transform:translateX(-50%);z-index:3;visibility:visible!important}
+.pg i{display:block;width:100%;height:6px;border-radius:99px;background:var(--sk);position:relative;overflow:hidden;transform:none!important}
+.pg i::before{content:"";position:absolute;inset:0;border-radius:99px;background:linear-gradient(90deg,var(--a),var(--b));transform-origin:left;transform:var(--pt,scaleX(0))}
+.pg span{font:500 11.5px 'JetBrains Mono',monospace;color:var(--tx2)}
+#topbar{position:fixed;top:0;left:0;right:0;height:3px;z-index:70;transform-origin:left;transform:scaleX(0);background:linear-gradient(90deg,var(--a),var(--b));opacity:0;transition:opacity .3s ease;pointer-events:none;box-shadow:0 0 10px var(--a)}
+#topbar.on{opacity:1}

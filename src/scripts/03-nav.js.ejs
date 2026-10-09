@@ -1,3 +1,32 @@
 /* ---------- nav ---------- */
-function go(v){$$('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));$$('.view').forEach(s=>s.classList.toggle('on',s.id==='v-'+v));history.replaceState(null,'','#'+v);renderCharts();scrollTo({top:0})}
+let skTimer=null,curView=null,pgRaf=0;
+/* barra de progresso: uma por card de grafico/mapa/tabela + uma fina no topo da pagina */
+function ensureProgress(view){
+  $$('.card,.tbl-wrap',view).forEach(c=>{if(!c.querySelector(':scope>.pg')&&(c.matches('.tbl-wrap')||c.querySelector('.ch,.mapbox')))c.insertAdjacentHTML('beforeend','<div class="pg" role="progressbar" aria-label="Carregando" aria-valuemin="0" aria-valuemax="100"><i></i><span>0%</span></div>')});
+}
+function setProgress(view,p){
+  $$('.pg',view).forEach(e=>{e.firstChild.style.setProperty('--pt',`scaleX(${p/100})`);e.lastChild.textContent=p+'%';e.setAttribute('aria-valuenow',p)});
+  const b=$('#topbar');b.style.transform=`scaleX(${p/100})`;b.classList.toggle('on',p<100);
+}
+function runProgress(view,dur){
+  cancelAnimationFrame(pgRaf);const t0=performance.now();
+  const step=now=>{const k=Math.min(1,(now-t0)/dur);setProgress(view,Math.round(97*(1-Math.pow(1-k,2.2))));if(k<1)pgRaf=requestAnimationFrame(step)};
+  pgRaf=requestAnimationFrame(step);
+}
+/* mostra skeleton + spinner enquanto a aba "renderiza", depois revela com animacao em cascata */
+function go(v,instant){
+  const first=curView===null,same=curView===v;curView=v;
+  clearTimeout(skTimer);$$('.view.sk').forEach(s=>s.classList.remove('sk'));
+  $$('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+  $$('.view').forEach(s=>s.classList.toggle('on',s.id==='v-'+v));
+  history.replaceState(null,'','#'+v);scrollTo({top:0});
+  const view=$('#v-'+v);
+  if(v==='compare'&&!same)cmpSig=null;
+  $$('.card',view).forEach((c,i)=>c.style.setProperty('--i',Math.min(i,14)));
+  const reveal=()=>{cancelAnimationFrame(pgRaf);setProgress(view,100);view.classList.remove('sk');renderCharts();if(v==='overview')animateHero()};
+  if(instant||same||matchMedia('(prefers-reduced-motion: reduce)').matches){reveal();return}
+  const dur=first?1000:520;
+  ensureProgress(view);setProgress(view,0);view.classList.add('sk');runProgress(view,dur);
+  skTimer=setTimeout(reveal,dur);
+}
 $('#nav').onclick=e=>{const b=e.target.closest('button');if(b)go(b.dataset.v)};
