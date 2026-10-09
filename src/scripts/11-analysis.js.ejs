@@ -1,0 +1,18 @@
+/* ---------- analysis ---------- */
+function renderAnalysis(){
+  const bySize=[...D].sort((x,y)=>y.t-x.t),top=bySize[0],top10=bySize.slice(0,10).reduce((s,d)=>s+d.t,0)/ST.t*100;
+  const exTop=ST.diff-top.diff,close=D.filter(d=>Math.abs(d.pa-d.pb)<5).length,sweep=D.filter(d=>Math.max(d.pa,d.pb)>=70);
+  const lowWinsA=D.filter(d=>d.lead==='a'&&d.t<10000).length,lowWinsB=D.filter(d=>d.lead==='b'&&d.t<10000).length;
+  const avg=D.reduce((s,d)=>s+d.pa,0)/D.length;
+  const I=[
+   ['🏙️',`${title(top.name)} pesa ${pc(top.t/ST.t*100)} do total`,`Lá, ${top.lead==='a'?'Braide':'Orleans'} abriu ${fmt(Math.abs(top.diff))} votos. Sem esse município, a diferença estadual seria de ${fmt(Math.abs(exTop))} votos a favor de ${exTop>0?'Braide':'Orleans'}.`],
+   ['⚖️',`${close} municípios foram decididos por menos de 5 p.p.`,`Cerca de ${pc(close/D.length*100)} do mapa foi equilibrado — onde pequenas variações mudariam o líder.`],
+   ['📊',`Média municipal vs. voto total`,`A média simples de Braide por município é ${pc(avg)}, contra ${pc(ST.pa)} no voto agregado — efeito do peso dos municípios grandes.`],
+   ['🌾',`Interior pequeno (< 10 mil votos)`,`Braide lidera em ${lowWinsA} e Orleans em ${lowWinsB} dos municípios com menos de 10 mil votos válidos.`],
+   ['🔟',`10 maiores municípios = ${pc(top10)} dos votos`,`A votação é concentrada: os 10 maiores colégios definem boa parte da disputa agregada.`],
+   ['🏆',`${sweep.length} municípios com 70%+ para um lado`,sweep.length?`${sweep.filter(d=>d.lead==='a').length} para Braide e ${sweep.filter(d=>d.lead==='b').length} para Orleans — bastiões consolidados.`:'Nenhum município teve placar tão amplo.']];
+  $('#insights').innerHTML=I.map(i=>`<div class="card ins"><div class="ic">${i[0]}</div><div><h4>${i[1]}</h4><p>${i[2]}</p></div></div>`).join('');
+  const row=(arr,f)=>arr.map((d,i)=>`<li data-c="${d.code}"><span class="n">${String(i+1).padStart(2,'0')}</span><span><b>${title(d.name)}</b> <span style="color:var(--tx3);font-size:12px">· ${fmt(d.t)} votos</span></span>${f(d)}</li>`).join('');
+  $('#closest').innerHTML=row([...D].sort((x,y)=>Math.abs(x.pa-50)-Math.abs(y.pa-50)).slice(0,10),d=>`<span class="tag ${d.lead}">${pp(d.pa)} × ${pp(d.pb)}</span>`);
+  $('#strong').innerHTML=row([...D].sort((x,y)=>Math.max(y.pa,y.pb)-Math.max(x.pa,x.pb)).slice(0,10),d=>`<span class="tag ${d.lead}">${NAME[d.lead]} ${pp(Math.max(d.pa,d.pb))}%</span>`);
+}

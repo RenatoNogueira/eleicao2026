@@ -1,0 +1,78 @@
+/* ---------- map ---------- */
+const MAP = <%- mapJson %>;
+let MODE='margin';
+const szMin=Math.min(...D.map(d=>d.t)),szMax=Math.max(...D.map(d=>d.t));
+function fillOf(d,mode){
+  if(mode==='size'){const t=Math.log(d.t/szMin)/Math.log(szMax/szMin);return `color-mix(in srgb,var(--ok) ${Math.round(14+86*Math.pow(t,.7))}%,var(--bg2))`}
+  if(mode==='close'){return Math.abs(d.pa-50)<5?`var(--${d.lead})`:'var(--bg2)'}
+  const t=Math.min(1,Math.abs(d.pa-50)/32);return `color-mix(in srgb,var(--${d.lead}) ${Math.round(22+78*t)}%,var(--bg2))`;
+}
+function mapSVG(mode){
+  return `<svg viewBox="${MAP.vb}" role="img" aria-label="Mapa do Maranhão">${D.map(d=>MAP.p[d.code]?`<path data-c="${d.code}" d="${MAP.p[d.code]}" style="fill:${fillOf(d,mode)}"></path>`:'').join('')}</svg>`;
+}
+function legendHTML(mode){
+  if(mode==='size')return `<span>Menos votos</span><span class="grad" style="background:linear-gradient(90deg,color-mix(in srgb,var(--ok) 14%,var(--bg2)),var(--ok))"></span><span>Mais votos</span>`;
+  if(mode==='close')return `<span class="dot" style="background:var(--a)"></span>Braide (&lt;5 p.p.)<span class="dot" style="background:var(--b)"></span>Orleans (&lt;5 p.p.)<span class="dot" style="background:var(--bg2);border:1px solid var(--line)"></span>Demais`;
+  return `<span style="color:var(--b);font-weight:700">Orleans</span><span class="grad" style="background:linear-gradient(90deg,var(--b),color-mix(in srgb,var(--b) 22%,var(--bg2)),var(--bg2),color-mix(in srgb,var(--a) 22%,var(--bg2)),var(--a))"></span><span style="color:var(--a);font-weight:700">Braide</span>`;
+}
+function renderMap(){
+  $('#mapOv').innerHTML=mapSVG('margin');attachZoom($('#mapOv'),true);
+  $$('[data-legend="margin"]').forEach(e=>e.innerHTML=legendHTML('margin'));
+  $('#mapFull').innerHTML=mapSVG(MODE);attachZoom($('#mapFull'),false);
+  $('[data-legend="1"]').innerHTML=legendHTML(MODE);
+  $$('#mapMode button').forEach(b=>b.classList.toggle('on',b.dataset.m===MODE));
+  const cl=D.filter(d=>Math.abs(d.pa-50)<5);
+  $('#mapNote').textContent=MODE==='close'?`${cl.length} municípios com diferença menor que 5 p.p.`:MODE==='size'?'Escala logarítmica de votos válidos':'Cor mais forte = margem maior';
+  const src=MODE==='size'?[...D].sort((x,y)=>y.t-x.t):MODE==='close'?[...D].sort((x,y)=>Math.abs(x.pa-50)-Math.abs(y.pa-50)):[...D].sort((x,y)=>Math.abs(y.diff)-Math.abs(x.diff));
+  $('#mapListT').textContent=MODE==='size'?'Maiores municípios':MODE==='close'?'Mais disputados':'Maiores margens (votos)';
+  $('#mapListS').textContent=MODE==='size'?'Por votos válidos':MODE==='close'?'Menor diferença percentual':'Diferença absoluta de votos';
+  $('#mapList').innerHTML=src.slice(0,8).map((d,i)=>`<li data-c="${d.code}"><span class="n">${String(i+1).padStart(2,'0')}</span><span><b>${title(d.name)}</b></span><span class="tag ${d.lead}">${MODE==='size'?fmt(d.t):MODE==='close'?pp(d.pa)+' × '+pp(d.pb):(d.diff>0?'+':'−')+fmt(Math.abs(d.diff))}</span></li>`).join('');
+  mapInfo(null);
+}
+function mapInfo(d){
+  $('#mapInfo').innerHTML=d?`<span class="tag ${d.lead}">Lidera: ${NAME[d.lead]}</span><h3 style="font-size:18px;margin:8px 0 10px">${title(d.name)}</h3><div class="bar" style="margin:0 0 8px;height:10px"><i class="a" style="width:${d.pa}%"></i><i class="b" style="width:${d.pb}%"></i></div><div style="display:flex;justify-content:space-between;font-size:13px;font-weight:700"><span style="color:var(--a)">${pp(d.pa)}% · ${fmt(d.a)}</span><span style="color:var(--b)">${pp(d.pb)}% · ${fmt(d.b)}</span></div><p class="sub" style="margin:10px 0 0">${fmt(d.t)} votos válidos · diferença ${fmt(Math.abs(d.diff))}</p>`
+   :`<h3>Passe o mouse no mapa</h3><p class="sub" style="margin:4px 0 0">Veja os números de cada município aqui. Clique para abrir os detalhes completos.</p>`;
+}
+/* zoom & pan (viewBox based) */
+function attachZoom(box,needCtrl){
+  const svg=box.querySelector('svg');if(!svg)return;
+  const B=MAP.vb.split(' ').map(Number),BW=B[2],BH=B[3],MAXZ=14;
+  let v={x:0,y:0,w:BW,h:BH},moved=false,pinch=0;const ptr=new Map();
+  box.insertAdjacentHTML('beforeend',`<div class="zc"><button data-z="in" aria-label="Aproximar">+</button><button data-z="out" aria-label="Afastar">−</button><button data-z="reset" aria-label="Redefinir zoom" style="font-size:13px">⤢</button></div><span class="zhint">${matchMedia('(pointer:coarse)').matches?'Pinça para zoom · arraste para mover':needCtrl?'Ctrl + rolagem ou botões para zoom':'Rolagem para zoom · arraste para mover'}</span>`);
+  const apply=()=>{
+    v.w=Math.min(BW,Math.max(BW/MAXZ,v.w));v.h=v.w*BH/BW;
+    v.x=Math.min(BW-v.w,Math.max(0,v.x));v.y=Math.min(BH-v.h,Math.max(0,v.y));
+    svg.setAttribute('viewBox',`${v.x} ${v.y} ${v.w} ${v.h}`);box.classList.toggle('zoomed',v.w<BW-0.5);
+  };
+  const geo=()=>{const r=svg.getBoundingClientRect(),s=Math.min(r.width/v.w,r.height/v.h);return {r,s,ox:(r.width-v.w*s)/2,oy:(r.height-v.h*s)/2}};
+  const toUser=(cx,cy)=>{const g=geo();return [v.x+(cx-g.r.left-g.ox)/g.s,v.y+(cy-g.r.top-g.oy)/g.s]};
+  const zoomAt=(k,cx,cy)=>{const [ux,uy]=cx==null?[v.x+v.w/2,v.y+v.h/2]:toUser(cx,cy);const nw=Math.min(BW,Math.max(BW/MAXZ,v.w/k)),f=nw/v.w;v.x=ux-(ux-v.x)*f;v.y=uy-(uy-v.y)*f;v.w=nw;apply()};
+  box.addEventListener('wheel',e=>{if(needCtrl&&!e.ctrlKey&&!e.metaKey)return;e.preventDefault();zoomAt(Math.exp(-e.deltaY*(e.ctrlKey?0.012:0.0018)),e.clientX,e.clientY)},{passive:false});
+  box.addEventListener('click',e=>{const b=e.target.closest('[data-z]');if(!b)return;e.stopPropagation();const k=b.dataset.z;if(k==='reset'){v={x:0,y:0,w:BW,h:BH};apply()}else zoomAt(k==='in'?1.6:1/1.6)});
+  box.addEventListener('dblclick',e=>{if(e.target.closest('.zc'))return;zoomAt(2,e.clientX,e.clientY)});
+  box.addEventListener('pointerdown',e=>{if(e.target.closest('.zc'))return;ptr.set(e.pointerId,[e.clientX,e.clientY]);moved=false;if(ptr.size===2){const [a,b]=[...ptr.values()];pinch=Math.hypot(a[0]-b[0],a[1]-b[1])}});
+  box.addEventListener('pointermove',e=>{
+    if(!ptr.has(e.pointerId))return;const prev=ptr.get(e.pointerId);ptr.set(e.pointerId,[e.clientX,e.clientY]);
+    if(ptr.size===2){const [a,b]=[...ptr.values()],d=Math.hypot(a[0]-b[0],a[1]-b[1]);if(pinch)zoomAt(d/pinch,(a[0]+b[0])/2,(a[1]+b[1])/2);pinch=d;moved=true;return}
+    if(v.w>=BW-0.5)return;
+    const dx=e.clientX-prev[0],dy=e.clientY-prev[1];
+    if(!moved&&Math.hypot(dx,dy)<2)return;
+    moved=true;box.classList.add('dragging');const s=geo().s;v.x-=dx/s;v.y-=dy/s;apply();tip.classList.remove('on');
+  });
+  const end=e=>{ptr.delete(e.pointerId);pinch=0;box.classList.remove('dragging')};
+  box.addEventListener('pointerup',end);box.addEventListener('pointercancel',end);box.addEventListener('pointerleave',end);
+  box.addEventListener('click',e=>{if(moved&&!e.target.closest('.zc')){e.stopPropagation();e.preventDefault()}moved=false},true);
+}
+const tip=$('#tip');
+document.addEventListener('mousemove',e=>{
+  const p=e.target.closest?.('.mapbox path');
+  if(!p){tip.classList.remove('on');return}
+  const d=byCode[p.dataset.c];
+  tip.innerHTML=`<b>${title(d.name)}</b><span style="color:var(--a)">Braide ${pp(d.pa)}%</span> · <span style="color:var(--b)">Orleans ${pp(d.pb)}%</span><br><span style="color:var(--tx2)">${fmt(d.t)} votos válidos</span>`;
+  tip.classList.add('on');
+  const w=tip.offsetWidth,h=tip.offsetHeight;
+  tip.style.left=Math.min(innerWidth-w-10,e.clientX+14)+'px';tip.style.top=Math.min(innerHeight-h-10,e.clientY+14)+'px';
+  if(p.closest('#mapFull'))mapInfo(d);
+});
+document.addEventListener('click',e=>{const p=e.target.closest?.('.mapbox path');if(p)openDrawer(p.dataset.c)});
+$('#mapMode').onclick=e=>{const b=e.target.closest('button');if(b){MODE=b.dataset.m;renderMap()}};

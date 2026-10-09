@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Painel Governador MA 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+<%- include('styles/main.css') %>
+</style>
+</head>
+<body>
+<%- include('partials/header') %>
+
+<div class="wrap"><main>
+
+<!-- OVERVIEW -->
+<%- include('views/overview') %>
+
+<!-- MAP -->
+<%- include('views/map') %>
+
+<!-- CITIES -->
+<%- include('views/cities') %>
+
+<!-- COMPARE -->
+<%- include('views/compare') %>
+
+<!-- ANALYSIS -->
+<%- include('views/analysis') %>
+
+<%- include('partials/footer') %>
+</main></div>
+
+<%- include('partials/overlays') %>
+
+<script>
+<%- include('scripts/00-raw-data.js.ejs') %>
+<%- include('scripts/01-data.js.ejs') %>
+<%- include('scripts/02-theme.js.ejs') %>
+<%- include('scripts/03-nav.js.ejs') %>
+<%- include('scripts/04-overview.js.ejs') %>
+<%- include('scripts/05-charts.js.ejs') %>
+<%- include('scripts/06-map.js.ejs') %>
+<%- include('scripts/07-cities-table.js.ejs') %>
+<%- include('scripts/08-drawer.js.ejs') %>
+<%- include('scripts/09-search-boxes.js.ejs') %>
+<%- include('scripts/10-compare.js.ejs') %>
+<%- include('scripts/11-analysis.js.ejs') %>
+<%- include('scripts/12-init.js.ejs') %>
+</script>
+</body>
+</html>

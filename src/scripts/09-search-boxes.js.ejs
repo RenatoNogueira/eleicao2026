@@ -1,0 +1,15 @@
+/* ---------- search boxes ---------- */
+function bindSearch(inp,box,onPick){
+  let hl=-1,items=[];
+  const draw=()=>{const q=norm(inp.value.trim());if(!q){box.classList.remove('on');return}
+    items=D.filter(d=>norm(d.name).includes(q)).sort((x,y)=>norm(x.name).startsWith(q)?-1:norm(y.name).startsWith(q)?1:y.t-x.t).slice(0,8);
+    box.innerHTML=items.length?items.map((d,i)=>`<button data-c="${d.code}" class="${i===hl?'hl':''}"><span>${title(d.name)}</span><span class="tag ${d.lead}">${NAME[d.lead]} ${pp(Math.max(d.pa,d.pb))}%</span></button>`).join(''):'<div class="empty" style="padding:16px">Sem resultados</div>';box.classList.add('on')};
+  inp.addEventListener('input',()=>{hl=-1;draw()});
+  inp.addEventListener('keydown',e=>{if(e.key==='ArrowDown'){hl=Math.min(items.length-1,hl+1);draw();e.preventDefault()}else if(e.key==='ArrowUp'){hl=Math.max(0,hl-1);draw();e.preventDefault()}else if(e.key==='Enter'&&items.length){pick(items[Math.max(0,hl)].code)}else if(e.key==='Escape'){box.classList.remove('on');inp.blur()}});
+  box.addEventListener('mousedown',e=>{const b=e.target.closest('button');if(b){e.preventDefault();pick(b.dataset.c)}});
+  inp.addEventListener('blur',()=>setTimeout(()=>box.classList.remove('on'),120));
+  function pick(c){inp.value='';box.classList.remove('on');onPick(c)}
+}
+bindSearch($('#gs'),$('#sugg'),c=>openDrawer(c));
+bindSearch($('#cs'),$('#csugg'),c=>toggleCmp(c));
+document.addEventListener('keydown',e=>{if(e.key==='/'&&!/INPUT|SELECT/.test(document.activeElement.tagName)){e.preventDefault();$('#gs').focus()}if(e.key==='Escape')closeDrawer()});

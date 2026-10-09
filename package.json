@@ -1,0 +1,12 @@
+{
+  "name": "painel-governador-ma-2026",
+  "private": true,
+  "description": "Painel de resultados do governo do Maranhao 2026, gerado com EJS a partir do CSV",
+  "scripts": {
+    "build": "node build.js",
+    "watch": "node build.js --watch"
+  },
+  "devDependencies": {
+    "ejs": "^3.1.10"
+  }
+}

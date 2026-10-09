@@ -1,0 +1,12 @@
+<section class="view" id="v-map">
+  <div class="toolbar"><div class="seg" id="mapMode">
+    <button data-m="margin" class="on">Líder e margem</button><button data-m="size">Porte (votos)</button><button data-m="close">Disputados</button>
+  </div><span class="sp"></span><span id="mapNote" style="font-size:13px;color:var(--tx2)"></span></div>
+  <div class="grid g-21">
+    <div class="card"><div class="mapbox" id="mapFull"></div><div class="legend" data-legend="1"></div></div>
+    <div style="display:grid;gap:16px;align-content:start">
+      <div class="card" id="mapInfo"></div>
+      <div class="card"><h3 id="mapListT">Maiores margens</h3><p class="sub" id="mapListS"></p><ul class="rank" id="mapList"></ul></div>
+    </div>
+  </div>
+</section>
