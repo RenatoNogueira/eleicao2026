@@ -75,3 +75,6 @@ município votou (mapa por líder ou por candidato, tabela e gaveta com o detalh
 npm run dados:presidente   # baixa Brasil, Maranhão e os 217 municípios (~220 requisições)
 npm run build
 ```
+
+O `npm run dados:presidente` baixa os dois turnos (o código do 2º turno vem do catálogo do TSE). Enquanto o 2º turno
+não tem votos apurados, a aba mostra "aguardando"; depois da apuração basta rodar o comando de novo, o build e publicar.

@@ -1,5 +1,8 @@
 /* ---------- nav ---------- */
 let skTimer=null,curView=null,pgRaf=0;
+const MORE_VIEWS=['compare','analysis','secoes','deps'];
+function closeMore(){$('#moreSheet').classList.remove('on');$('#moreScrim').classList.remove('on');$('#moreSheet').setAttribute('aria-hidden','true')}
+function openMore(){$('#moreSheet').classList.add('on');$('#moreScrim').classList.add('on');$('#moreSheet').setAttribute('aria-hidden','false')}
 /* barra de progresso: uma por card de grafico/mapa/tabela + uma fina no topo da pagina */
 function ensureProgress(view){
   $$('.card,.tbl-wrap',view).forEach(c=>{if(!c.querySelector(':scope>.pg')&&(c.matches('.tbl-wrap')||c.querySelector('.ch,.mapbox')))c.insertAdjacentHTML('beforeend','<div class="pg" role="progressbar" aria-label="Carregando" aria-valuemin="0" aria-valuemax="100"><i></i><span>0%</span></div>')});
@@ -18,6 +21,8 @@ function go(v,instant){
   const first=curView===null,same=curView===v;curView=v;
   clearTimeout(skTimer);$$('.view.sk').forEach(s=>s.classList.remove('sk'));
   $$('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+  $$('#tabbar [data-v]').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+  $('#tbMore').classList.toggle('on',MORE_VIEWS.includes(v));$$('#moreSheet [data-v]').forEach(b=>b.classList.toggle('on',b.dataset.v===v));closeMore();
   $$('.view').forEach(s=>s.classList.toggle('on',s.id==='v-'+v));
   history.replaceState(null,'','#'+v);scrollTo({top:0});
   const view=$('#v-'+v);
@@ -31,3 +36,6 @@ function go(v,instant){
   skTimer=setTimeout(reveal,dur);
 }
 $('#nav').onclick=e=>{const b=e.target.closest('button');if(b)go(b.dataset.v)};
+$('#tabbar').onclick=e=>{const b=e.target.closest('button');if(!b)return;if(b.id==='tbMore'){$('#moreSheet').classList.contains('on')?closeMore():openMore()}else go(b.dataset.v)};
+$('#moreSheet').onclick=e=>{const b=e.target.closest('button[data-v]');if(b)go(b.dataset.v)};
+$('#moreScrim').onclick=closeMore;

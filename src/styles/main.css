@@ -344,3 +344,24 @@ body:has(header .sugg.on)::after{content:"";position:fixed;inset:0;z-index:25;ba
 .lgl .who b{display:block;font-size:13px;line-height:1.25;font-weight:600}
 .lgl .who small,.lgl .v small{display:block;color:var(--tx3);font-size:11.5px;font-weight:500}
 .lgl .v{text-align:right;font-weight:700;font-size:13px;white-space:nowrap}
+
+/* navegacao mobile: barra inferior fixa; o menu do topo (8 itens) so existe no desktop */
+.tabbar,.more-sheet,.more-scrim{display:none}
+@media(max-width:700px){
+  header nav#nav{display:none}
+  .wrap{padding-bottom:calc(96px + env(safe-area-inset-bottom))}
+  .tabbar{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;left:0;right:0;bottom:0;z-index:38;padding:6px 6px calc(6px + env(safe-area-inset-bottom));background:color-mix(in srgb,var(--card-solid) 92%,transparent);backdrop-filter:blur(18px) saturate(160%);-webkit-backdrop-filter:blur(18px) saturate(160%);border-top:1px solid var(--line);box-shadow:0 -8px 28px rgba(0,0,0,.25)}
+  .tabbar button{display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px 2px 6px;border:0;background:none;border-radius:12px;color:var(--tx3);font-size:11px;font-weight:600;line-height:1.1;-webkit-tap-highlight-color:transparent}
+  .tabbar button svg{width:22px;height:22px}
+  .tabbar button.on{color:var(--a);background:var(--a-soft)}
+  .more-scrim{display:block;position:fixed;inset:0;z-index:36;background:rgba(5,8,18,.5);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);opacity:0;pointer-events:none;transition:opacity .2s}
+  .more-scrim.on{opacity:1;pointer-events:auto}
+  .more-sheet{display:grid;gap:6px;position:fixed;left:0;right:0;bottom:0;z-index:37;padding:10px 14px calc(88px + env(safe-area-inset-bottom));background:var(--card-solid);border-top:1px solid var(--line);border-radius:20px 20px 0 0;box-shadow:0 -18px 50px rgba(0,0,0,.45);transform:translateY(105%);transition:transform .28s cubic-bezier(.2,.8,.2,1)}
+  .more-sheet.on{transform:none}
+  .more-sheet .grip{width:40px;height:4px;border-radius:99px;background:var(--line);margin:0 auto 6px}
+  .more-sheet button{display:flex;align-items:center;gap:14px;padding:14px 12px;border:0;border-radius:14px;background:var(--bg2);color:var(--tx);font-size:15px;font-weight:600;text-align:left}
+  .more-sheet button svg{width:22px;height:22px;color:var(--tx2);flex:none}
+  .more-sheet button.on{background:var(--a-soft);color:var(--a)}
+  .more-sheet button.on svg{color:var(--a)}
+  .drawer{padding-bottom:calc(26px + env(safe-area-inset-bottom))}
+}

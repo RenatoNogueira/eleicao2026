@@ -1,5 +1,6 @@
 <section class="view" id="v-pres">
   <div class="toolbar">
+    <div class="seg" id="presTurn"><button data-t="1" class="on">1º turno</button><button data-t="2">2º turno</button></div>
     <span id="presNote" style="font-size:13px;color:var(--tx2)"></span>
   </div>
 
@@ -8,6 +9,12 @@
   <div class="sec-title">Candidatos</div>
   <div class="grid g3" id="presCands"></div>
 
+  <div class="card" id="presPending" style="margin-top:18px;display:none">
+    <h3>2º turno ainda sem votos apurados</h3>
+    <p class="sub" style="margin:6px 0 0">O segundo turno está marcado para 25/10/2026. Quando o TSE iniciar a apuração, rode <code>npm run dados:presidente</code> e publique de novo: esta aba passa a mostrar o resultado do Maranhão e de cada município, com a comparação com o 1º turno.</p>
+  </div>
+
+  <div id="presMain">
   <div class="sec-title">Maranhão × Brasil</div>
   <div class="grid g2">
     <div class="card"><h3>% dos votos válidos</h3><p class="sub">Como o Maranhão votou em relação ao país (6 maiores candidatos)</p><div class="ch tall"><canvas id="pChBr"></canvas></div></div>
@@ -35,4 +42,5 @@
   </div>
   <div class="tbl-wrap"><table id="presTbl"><thead></thead><tbody></tbody></table></div>
   <div class="pager"><span id="presPinfo"></span><div id="presPbtn"></div></div>
+  </div>
 </section>
