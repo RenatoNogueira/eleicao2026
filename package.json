@@ -9,7 +9,8 @@
     "dados:secoes": "node tools/tse-secoes.js",
     "dados:locais": "node tools/tse-locais.js",
     "dados:presidente": "node tools/tse-presidente.js",
-    "dados:governador": "node tools/tse-governador.js"
+    "dados:governador": "node tools/tse-governador.js",
+    "dados:apuracao": "node tools/tse-apuracao.js"
   },
   "devDependencies": {
     "ejs": "^3.1.10"

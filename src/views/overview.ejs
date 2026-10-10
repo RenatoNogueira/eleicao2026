@@ -10,6 +10,19 @@
 
   <div class="grid g4" style="margin-top:16px" id="kpis"></div>
 
+  <div class="sec-title">Apuração voto a voto</div>
+  <div class="card" id="apCard">
+    <div class="card-head">
+      <div><h3>Como a apuração evoluiu</h3><p class="sub">Percentual de cada candidato sobre os votos já apurados, na ordem em que as seções chegaram ao TSE</p></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <select class="input" id="apMun"><option value="all">Todo o estado</option></select>
+        <div class="seg" id="apMode"><button data-m="pct" class="on">% dos votos apurados</button><button data-m="votes">Votos acumulados</button></div>
+      </div>
+    </div>
+    <div class="ch tall"><canvas id="cApur"></canvas></div>
+    <p class="sub" id="apNote" style="margin:12px 0 0"></p>
+  </div>
+
   <div class="sec-title">Mapa</div>
   <div class="grid g-21">
     <div class="card"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px"><div><h3>Mapa do Maranhão por município</h3><p class="sub">Cor = líder · intensidade = margem. Clique num município para detalhes.</p></div><button class="btn" onclick="go('map')">Tela cheia →</button></div><div class="mapbox" id="mapOv"></div><div class="legend" data-legend="margin"></div></div>

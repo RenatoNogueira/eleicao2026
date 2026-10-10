@@ -76,6 +76,14 @@ function build() {
     locaisJson = JSON.stringify({ locs, s: s2 });
     ver.locais = require('crypto').createHash('sha1').update(locaisJson).digest('hex').slice(0, 10);
   } else console.warn('Aviso: locais_votacao_por_secao.csv nao encontrado (rode npm run dados:locais); detalhes de local ficarao ausentes');
+  // horario em que cada secao chegou ao TSE (mesma ordem do CSV de secoes): apuracao voto a voto
+  const APU = path.join(ROOT, 'data', 'apuracao.json');
+  let apuracaoJson = 'null';
+  if (fs.existsSync(APU)) {
+    const a = JSON.parse(fs.readFileSync(APU, 'utf8'));
+    if (a.n !== secRows.length) throw new Error('data/apuracao.json fora de sincronia com o CSV de secoes (rode npm run dados:apuracao)');
+    apuracaoJson = JSON.stringify(a);
+  } else console.warn('Aviso: data/apuracao.json nao encontrado (rode npm run dados:apuracao); o grafico de apuracao ficara oculto');
   const presidenteJson = fs.readFileSync(path.join(ROOT, 'data', 'presidente.json'), 'utf8').trim();
   const secoesJson = JSON.stringify({ mun, rows: secRows, ver });
 
@@ -93,7 +101,7 @@ function build() {
   fs.writeFileSync(path.join(PUBLIC_DIR, 'favicon.svg'), iconSvg, 'utf8');
   const iconUri = 'data:image/svg+xml;base64,' + Buffer.from(iconSvg).toString('base64');
   const dep = k => fs.readFileSync(path.join(ROOT, 'data', `legislativo_${k}.json`), 'utf8').trim();
-  const html = ejs.render(fs.readFileSync(tpl, 'utf8'), { data, mapJson, secoesJson, presidenteJson, gaId, flagUri, iconUri, depFederal: dep('federal'), depEstadual: dep('estadual'), depSenador: dep('senador') }, { filename: tpl });
+  const html = ejs.render(fs.readFileSync(tpl, 'utf8'), { data, mapJson, secoesJson, presidenteJson, apuracaoJson, gaId, flagUri, iconUri, depFederal: dep('federal'), depEstadual: dep('estadual'), depSenador: dep('senador') }, { filename: tpl });
   fs.mkdirSync(PUBLIC_DIR, { recursive: true });
   fs.writeFileSync(path.join(PUBLIC_DIR, 'index.html'), html, 'utf8');
   if (locaisJson) { fs.mkdirSync(path.join(PUBLIC_DIR, 'data'), { recursive: true }); fs.writeFileSync(path.join(PUBLIC_DIR, 'data', 'locais.json'), locaisJson); }

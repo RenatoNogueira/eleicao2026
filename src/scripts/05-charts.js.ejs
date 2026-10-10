@@ -39,5 +39,6 @@ function renderCharts(){
     options:baseOpts({plugins:{legend:{display:false},tooltip:{...baseOpts().plugins.tooltip,callbacks:{label:c=>` ${pc(c.raw)} dos votos`}}},scales:{x:{grid:{display:false},ticks:{color:css('--tx2')},border:{display:false}},y:{max:100,grid:{color:css('--line')},ticks:{color:css('--tx2'),callback:v=>v+'%'},border:{display:false}}}})});
   if($('#v-compare').classList.contains('on'))renderCompare();
   if($('#v-pres').classList.contains('on'))renderPresCharts();
+  if($('#v-overview').classList.contains('on'))renderApuracao();
   if($('#v-deps').classList.contains('on'))renderDeps();
 }

@@ -1,0 +1,65 @@
+/* ---------- apuracao voto a voto: evolucao dos votos conforme as secoes foram chegando ---------- */
+const APU=(()=>{
+  try{const j=JSON.parse($('#apuracao-data').textContent);return j&&j.t&&j.t.length===SEC.length?j:null}catch(e){return null}
+})();
+const APS={mode:'pct',mun:'all'};
+const apClock=m=>{
+  const d=new Date(Date.UTC(+APU.inicio.slice(0,4),+APU.inicio.slice(5,7)-1,+APU.inicio.slice(8,10))+m*60000);
+  const p=n=>String(n).padStart(2,'0');
+  return `${p(d.getUTCHours())}:${p(d.getUTCMinutes())} de ${p(d.getUTCDate())}/${p(d.getUTCMonth()+1)}`;
+};
+/* pontos acumulados, na ordem em que o TSE recebeu as secoes */
+function apSeries(){
+  const idx=[];
+  for(let i=0;i<SEC.length;i++)if(APS.mun==='all'||SEC[i].code===APS.mun)idx.push(i);
+  idx.sort((x,y)=>APU.t[x]-APU.t[y]||x-y);
+  const total=idx.reduce((s,i)=>s+SEC[i].a+SEC[i].b+SEC[i].k+SEC[i].o,0)||1;
+  const step=Math.max(1,Math.ceil(idx.length/140)),pts=[];
+  let a=0,b=0,k=0,o=0;
+  idx.forEach((i,n)=>{
+    const s=SEC[i];a+=s.a;b+=s.b;k+=s.k;o+=s.o;
+    if((n+1)%step===0||n===idx.length-1){
+      const v=a+b+k+o;
+      pts.push({x:v/total*100,a,b,k,o,v,secs:n+1,secPct:(n+1)/idx.length*100,t:APU.t[i],pa:a/v*100,pb:b/v*100,pk:k/v*100});
+    }
+  });
+  return {pts,secs:idx.length,total};
+}
+function renderApuracao(){
+  const card=$('#apCard');if(!card)return;
+  if(!APU){card.style.display='none';return}
+  $$('#apMode button').forEach(b=>b.classList.toggle('on',b.dataset.m===APS.mode));
+  const S=apSeries(),P=S.pts;
+  if(!P.length){return}
+  const A=css('--a'),B=css('--b'),K='#10b981',pct=APS.mode==='pct';
+  const ds=(label,key,color)=>({label,data:P.map(p=>({x:p.x,y:pct?p['p'+key]:p[key],p})),borderColor:color,backgroundColor:color,borderWidth:2.5,pointRadius:0,pointHoverRadius:5,tension:.15});
+  const O=baseOpts(),tx=css('--tx2'),ln=css('--line');
+  mk('cApur',{type:'line',data:{datasets:[ds('Braide','a',A),ds('Orleans','b',B),ds('Felipe Camarão','k',K)]},
+    options:{...O,parsing:false,interaction:{mode:'index',intersect:false},
+      plugins:{...O.plugins,tooltip:{...O.plugins.tooltip,callbacks:{
+        title:i=>{const p=i[0].raw.p;return `${pp(p.x)}% dos votos apurados · ${pp(p.secPct)}% das seções`},
+        afterTitle:i=>`Até ${apClock(i[0].raw.p.t)}`,
+        label:c=>pct?` ${c.dataset.label}: ${pp(c.raw.y)}%`:` ${c.dataset.label}: ${fmt(c.raw.y)} votos`}}},
+      scales:{
+        x:{type:'linear',min:0,max:100,title:{display:true,text:'% dos votos válidos apurados',color:tx},ticks:{color:tx,callback:v=>v+'%'},grid:{display:false},border:{display:false}},
+        y:{beginAtZero:true,title:{display:true,text:pct?'% dos votos apurados até o momento':'Votos acumulados',color:tx},ticks:{color:tx,callback:v=>pct?v+'%':fmt(v)},grid:{color:ln},border:{display:false}}}}});
+  /* quando Braide passou a liderar e nao perdeu mais a lideranca */
+  let from=-1;
+  for(let i=P.length-1;i>=0;i--){if(P[i].a>P[i].b)from=i;else break}
+  const first=P[0],last=P[P.length-1];
+  const who=last.a>=last.b?'Braide':'Orleans';
+  let lead;
+  if(from===0)lead=`<b>Braide</b> liderou desde as primeiras seções e manteve a vantagem até o fim.`;
+  else if(from>0)lead=`<b>Braide</b> assumiu a liderança aos <b>${pp(P[from].x)}%</b> dos votos apurados (${apClock(P[from].t)}) e não a perdeu mais.`;
+  else lead=`<b>Orleans</b> terminou à frente neste recorte.`;
+  const p90=P.find(p=>p.x>=90)||last;
+  const firstTxt=`As primeiras seções chegaram às ${apClock(first.t)}; 90% dos votos já estavam apurados às ${apClock(p90.t)} e a última seção chegou às ${apClock(last.t)}.`;
+  $('#apNote').innerHTML=`${APS.mun==='all'?'Maranhão':'Município'}: ${S.secs.toLocaleString('pt-BR')} seções, ${fmt(S.total)} votos válidos. ${lead} ${firstTxt}`;
+}
+(()=>{
+  if(!$('#apMun'))return;
+  const ms=[...D].sort((x,y)=>x.name.localeCompare(y.name,'pt-BR'));
+  $('#apMun').insertAdjacentHTML('beforeend',ms.map(d=>`<option value="${d.code}">${title(d.name)}</option>`).join(''));
+  $('#apMun').onchange=e=>{APS.mun=e.target.value;renderApuracao()};
+  $('#apMode').onclick=e=>{const b=e.target.closest('button');if(b){APS.mode=b.dataset.m;renderApuracao()}};
+})();

@@ -90,3 +90,14 @@ por compatibilidade, mas o painel usa `*_%_validos`. Para atualizar:
 npm run dados:governador   # baixa os 217 municípios e regrava o CSV (confere a soma com o total do estado)
 npm run build
 ```
+
+## Apuração voto a voto
+
+O gráfico **Apuração voto a voto** (Visão geral) mostra como o percentual de cada candidato evoluiu conforme as
+seções chegaram ao TSE (horário de recebimento de cada seção), por estado ou por município. Os horários ficam em
+`data/apuracao.json`, na mesma ordem de `resultados_governador_por_secao.csv`:
+
+```bash
+npm run dados:apuracao   # ~18 mil requisições pequenas (~15 min); rode depois de dados:secoes
+npm run build
+```
