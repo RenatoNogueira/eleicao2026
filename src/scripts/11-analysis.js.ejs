@@ -1,5 +1,35 @@
 /* ---------- analysis ---------- */
+let ANL='federal';
+const ANL_NAME={senador:'senador',federal:'deputado federal',estadual:'deputado estadual'};
+function renderAnLeg(){
+  const d=depLoad(ANL),N=d.mun.length;
+  $$('#anLegCargo button').forEach(b=>b.classList.toggle('on',b.dataset.c===ANL));
+  const lc=new Map(),lp=new Map();let best=null;
+  for(let mi=0;mi<N;mi++){
+    let ci=-1,cv=0;d.cands.forEach(c=>{const v=d.mv[c.i][mi];if(v>cv){cv=v;ci=c.i}});
+    let pi=-1,pv=0;d.parties.forEach((p,k)=>{const v=d.pm[k][mi];if(v>pv){pv=v;pi=k}});
+    if(ci>=0)lc.set(ci,(lc.get(ci)||[]).concat(mi));
+    if(pi>=0)lp.set(pi,(lp.get(pi)||[]).concat(mi));
+    const sh=d.vv[mi]?cv/d.vv[mi]*100:0;
+    if(ci>=0&&(!best||sh>best.sh))best={sh,ci,mi};
+  }
+  const rc=[...lc].sort((a,b)=>b[1].length-a[1].length),rp=[...lp].sort((a,b)=>b[1].length-a[1].length);
+  const mname=mi=>title(byCode[d.mun[mi]]?byCode[d.mun[mi]].name:d.mun[mi]);
+  const top=d.cands[0],topN=(lc.get(top.i)||[]).length;
+  const half=[...lc.values()].flat().filter(mi=>{let cv=0;d.cands.forEach(c=>{if(d.mv[c.i][mi]>cv)cv=d.mv[c.i][mi]});return d.vv[mi]&&cv/d.vv[mi]>0.5}).length;
+  const I=[
+    ['🏛️',`${rp[0]?d.parties[rp[0][0]].sg:'—'} lidera em ${rp[0]?rp[0][1].length:0} de ${N} municípios`,`Partido com mais municípios em que é o mais votado para ${ANL_NAME[ANL]}.`],
+    ['🥇',`${title(top.nu)} lidera em ${topN} municípios`,`Mais votado do estado (${fmt(top.v)} votos, ${d.parties[top.p].sg}); é o primeiro colocado em ${pc(topN/N*100,0)} dos municípios.`],
+    ['🎯',best?`${mname(best.mi)}: ${pp(best.sh)}% para um só nome`:'—',best?`${title(d.cands[best.ci].nu)} (${d.parties[d.cands[best.ci].p].sg}) tem a maior fatia dos votos válidos entre todos os municípios; em ${half} municípios o líder passa de 50%.`:'']
+  ];
+  $('#anLegIns').innerHTML=I.map(i=>`<div class="card ins"><div class="ic">${i[0]}</div><div><h4>${i[1]}</h4><p>${i[2]}</p></div></div>`).join('');
+  const li=(arr,f)=>arr.map(([k,ms],i)=>`<li><span class="n">${String(i+1).padStart(2,'0')}</span><span>${f(k)}</span><span class="tag mut">${ms.length} municípios</span></li>`).join('');
+  $('#anLegCand').innerHTML=li(rc.slice(0,10),ci=>{const c=d.cands[ci];return `<b>${title(c.nu)}</b> <span style="color:var(--tx3);font-size:12px">· ${d.parties[c.p].sg} · ${fmt(c.v)} votos</span>`});
+  $('#anLegParty').innerHTML=li(rp.slice(0,10),pi=>`<b>${d.parties[pi].sg}</b> <span style="color:var(--tx3);font-size:12px">· ${fmt(d.parties[pi].tot)} votos</span>`);
+}
+$('#anLegCargo').onclick=e=>{const b=e.target.closest('button');if(b){ANL=b.dataset.c;renderAnLeg()}};
 function renderAnalysis(){
+  renderAnLeg();
   const bySize=[...D].sort((x,y)=>y.t-x.t),top=bySize[0],top10=bySize.slice(0,10).reduce((s,d)=>s+d.t,0)/ST.t*100;
   const exTop=ST.diff-top.diff,close=D.filter(d=>Math.abs(d.pa-d.pb)<5).length,sweep=D.filter(d=>Math.max(d.pa,d.pb)>=70);
   const lowWinsA=D.filter(d=>d.lead==='a'&&d.t<10000).length,lowWinsB=D.filter(d=>d.lead==='b'&&d.t<10000).length;

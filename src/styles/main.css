@@ -337,3 +337,10 @@ body:has(header .sugg.on)::after{content:"";position:fixed;inset:0;z-index:25;ba
 .sugg button>span:first-child{flex:1 1 auto;min-width:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-weight:500}
 .sugg .tag{flex:none;white-space:nowrap;min-width:98px;justify-content:center}
 @media(max-width:700px){.sugg button{font-size:14px;padding:11px 14px}.sugg .tag{min-width:94px;font-size:11px}}
+
+/* comparar: lista de candidatos por municipio */
+.lgl{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:8px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
+.lgl .n{font-size:11px;color:var(--tx3);font-weight:700}
+.lgl .who b{display:block;font-size:13px;line-height:1.25;font-weight:600}
+.lgl .who small,.lgl .v small{display:block;color:var(--tx3);font-size:11.5px;font-weight:500}
+.lgl .v{text-align:right;font-weight:700;font-size:13px;white-space:nowrap}

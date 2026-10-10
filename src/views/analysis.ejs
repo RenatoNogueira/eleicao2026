@@ -9,4 +9,13 @@
   </div>
   <div class="sec-title">Concentração</div>
   <div class="card"><h3>Votos acumulados pelos maiores municípios</h3><p class="sub">Quanto do total de votos está concentrado nos N maiores colégios</p><div class="ch"><canvas id="cConc"></canvas></div></div>
+  <div class="sec-title">Legislativo</div>
+  <div class="toolbar"><div class="seg" id="anLegCargo">
+    <button data-c="senador">Senador</button><button data-c="federal" class="on"><span class="lg">Deputado</span><span class="sm">Dep.</span> Federal</button><button data-c="estadual"><span class="lg">Deputado</span><span class="sm">Dep.</span> Estadual</button>
+  </div></div>
+  <div class="grid g3" id="anLegIns"></div>
+  <div class="grid g2" style="margin-top:16px">
+    <div class="card"><h3>Candidatos que lideram em mais municípios</h3><p class="sub">Mais votado do cargo em cada município</p><ul class="rank" id="anLegCand"></ul></div>
+    <div class="card"><h3>Partidos que lideram em mais municípios</h3><p class="sub">Partido com mais votos (nominais + legenda) em cada município</p><ul class="rank" id="anLegParty"></ul></div>
+  </div>
 </section>

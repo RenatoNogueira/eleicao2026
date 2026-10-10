@@ -1,5 +1,6 @@
 /* ---------- compare ---------- */
-let CMP=[];
+let CMP=[],CMPL='federal';
+const CMPL_NAME={senador:'Senador',federal:'Deputado Federal',estadual:'Deputado Estadual'};
 const CC=['var(--a)','var(--b)','#10b981','#a855f7'];
 function toggleCmp(c,fromDrawer){
   if(CMP.includes(c))CMP=CMP.filter(x=>x!==c);else{if(CMP.length>=4)CMP.shift();CMP.push(c)}
@@ -7,6 +8,7 @@ function toggleCmp(c,fromDrawer){
   if(fromDrawer||!$('#v-compare').classList.contains('on'))go('compare');else renderCompare();
 }
 $('#v-compare').addEventListener('click',e=>{
+  const g=e.target.closest('#cmpCargo button');if(g){CMPL=g.dataset.c;renderCompare();return}
   const x=e.target.closest('.sel button');if(x){toggleCmp(x.dataset.c);return}
   const p=e.target.closest('[data-pre]');if(p){const k=p.dataset.pre;
     CMP=(k==='big'?[...D].sort((x,y)=>y.t-x.t):k==='close'?[...D].sort((x,y)=>Math.abs(x.pa-50)-Math.abs(y.pa-50)):k==='a'?[...D].sort((x,y)=>y.a-x.a):[...D].sort((x,y)=>y.b-x.b)).slice(0,4).map(d=>d.code);renderCompare()}
@@ -31,13 +33,53 @@ function renderCompare(){
       <div class="card"><h3>Percentual de votos</h3><p class="sub">Comparado à média do estado</p><div class="ch"><canvas id="cmp1"></canvas></div></div>
       <div class="card"><h3>Votos absolutos</h3><p class="sub">Braide × Orleans em cada município</p><div class="ch"><canvas id="cmp2"></canvas></div></div>
     </div>
+    ${cmpLegisHtml(ds)}
     ${ds.length>1?`<div class="card" style="margin-top:16px"><h3>Leitura rápida</h3><p class="sub" style="margin:6px 0 0;font-size:13px">${cmpText(ds)}</p></div>`:''}`;
   const sig=CMP.join(',');if(cmpSig!==sig){cmpSig=sig;animateIn($('#ccards'),1100)}
+  cmpLegisCharts(ds);
   const A=css('--a'),B=css('--b'),L=ds.map(d=>title(d.name));
   mk('cmp1',{type:'bar',data:{labels:L,datasets:[{label:'% Braide',data:ds.map(d=>d.pa),backgroundColor:A,borderRadius:7},{label:'% Orleans',data:ds.map(d=>d.pb),backgroundColor:B,borderRadius:7},{type:'line',label:'Média do estado (Braide)',data:ds.map(()=>ST.pa),borderColor:css('--tx2'),borderDash:[6,5],pointRadius:0,borderWidth:2}]},
     options:baseOpts({scales:{x:{grid:{display:false},ticks:{color:css('--tx2')},border:{display:false}},y:{min:0,max:100,grid:{color:css('--line')},ticks:{color:css('--tx2'),callback:v=>v+'%'},border:{display:false}}}})});
   mk('cmp2',{type:'bar',data:{labels:L,datasets:[{label:'Braide',data:ds.map(d=>d.a),backgroundColor:A,borderRadius:7},{label:'Orleans',data:ds.map(d=>d.b),backgroundColor:B,borderRadius:7}]},
     options:baseOpts({plugins:{...baseOpts().plugins,tooltip:{...baseOpts().plugins.tooltip,callbacks:{label:c=>` ${c.dataset.label}: ${fmt(c.raw)}`}}}})});
+}
+/* dados legislativos de cada coluna (municipios escolhidos + estado) */
+function cmpLegisCols(ds){
+  const d=depLoad(CMPL);
+  return [...ds.map(m=>({name:m.name,mi:d.munIdx[m.code]})),{name:'MARANHÃO (ESTADO)',mi:-1,state:1}];
+}
+function cmpLegisHtml(ds){
+  const d=depLoad(CMPL),cols=cmpLegisCols(ds);
+  const seg=['senador','federal','estadual'].map(k=>`<button data-c="${k}" class="${k===CMPL?'on':''}">${CMPL_NAME[k]}</button>`).join('');
+  const cards=cols.map((c,i)=>{
+    const vv=c.mi<0?d.geral.validos:d.vv[c.mi];
+    const cs=c.mi<0?d.cands.slice(0,5).map(x=>[x,x.v]):d.cands.map(x=>[x,d.mv[x.i][c.mi]]).sort((a,b)=>b[1]-a[1]).slice(0,5);
+    let bp=null,bv=-1;d.parties.forEach((p,pi)=>{const v=c.mi<0?p.tot:d.pm[pi][c.mi];if(v>bv){bv=v;bp=p}});
+    const li=cs.map(([x,v],k)=>`<div class="lgl"><span class="n">${String(k+1).padStart(2,'0')}</span><span class="who"><b>${title(x.nu)}</b><small>${d.parties[x.p].sg}</small></span><span class="v">${fmt(v)}<small>${pp(vv?v/vv*100:0)}%</small></span></div>`).join('');
+    return `<div class="card ccard" ${c.state?'style="border-style:dashed"':''}>
+      <div class="nm" style="${c.state?'':`border-left:4px solid ${CC[i]};padding-left:10px`}">${title(c.name)}</div>
+      <div class="row"><span>Votos válidos</span><b class="num">${fmt(vv)}</b></div>
+      <div class="row"><span>Partido líder</span><b class="num" style="white-space:nowrap">${bp?bp.sg:'—'} · ${pp(vv?bv/vv*100:0)}%</b></div>
+      <div style="margin-top:10px">${li}</div>
+    </div>`;
+  }).join('');
+  return `<div class="sec-title" style="margin-top:28px">Deputados e senador</div>
+    <div class="toolbar"><div class="seg" id="cmpCargo">${seg}</div><span style="font-size:13px;color:var(--tx2)">Votação no ${CMPL_NAME[CMPL].toLowerCase()} em cada município escolhido, frente ao estado</span></div>
+    <div class="grid cgrid">${cards}</div>
+    <div class="grid g2" style="margin-top:16px">
+      <div class="card"><h3>Votos por partido</h3><p class="sub">% dos votos válidos · 6 maiores partidos do estado</p><div class="ch"><canvas id="cmpL1"></canvas></div></div>
+      <div class="card"><h3>Mais votados do estado</h3><p class="sub">Desempenho dos 3 primeiros do estado em cada município (% dos votos válidos)</p><div class="ch"><canvas id="cmpL2"></canvas></div></div>
+    </div>`;
+}
+function cmpLegisCharts(ds){
+  const d=depLoad(CMPL),cols=cmpLegisCols(ds),L=cols.map(c=>title(c.name)),vvOf=c=>c.mi<0?d.geral.validos:d.vv[c.mi];
+  const col=i=>i<ds.length?CC[i].startsWith('var(')?css(CC[i].slice(4,-1)):CC[i]:css('--tx3');
+  const tip=baseOpts().plugins.tooltip;
+  const opts=baseOpts({plugins:{...baseOpts().plugins,tooltip:{...tip,callbacks:{label:c=>` ${c.dataset.label}: ${pp(c.raw)}%`}}},scales:{x:{grid:{display:false},ticks:{color:css('--tx2')},border:{display:false}},y:{beginAtZero:true,grid:{color:css('--line')},ticks:{color:css('--tx2'),callback:v=>v+'%'},border:{display:false}}}});
+  const P=d.order.slice(0,6);
+  mk('cmpL1',{type:'bar',data:{labels:P.map(pi=>d.parties[pi].sg),datasets:cols.map((c,i)=>({label:L[i],data:P.map(pi=>{const v=c.mi<0?d.parties[pi].tot:d.pm[pi][c.mi];return vvOf(c)?v/vvOf(c)*100:0}),backgroundColor:col(i),borderRadius:6}))},options:opts});
+  const T=d.cands.slice(0,3);
+  mk('cmpL2',{type:'bar',data:{labels:T.map(x=>title(x.nu)),datasets:cols.map((c,i)=>({label:L[i],data:T.map(x=>{const v=c.mi<0?x.v:d.mv[x.i][c.mi];return vvOf(c)?v/vvOf(c)*100:0}),backgroundColor:col(i),borderRadius:6}))},options:opts});
 }
 function cmpText(ds){
   const bigA=[...ds].sort((x,y)=>y.pa-x.pa)[0],bigB=[...ds].sort((x,y)=>y.pb-x.pb)[0],tight=[...ds].sort((x,y)=>Math.abs(x.pa-50)-Math.abs(y.pa-50))[0],big=[...ds].sort((x,y)=>y.t-x.t)[0];
