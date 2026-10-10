@@ -1,16 +1,33 @@
 /* ---------- zonas e secoes ---------- */
 const SECJ=JSON.parse($('#secoes-data').textContent);
 const SEC=(()=>{const j=SECJ;return j.rows.map((r,i)=>({i,code:j.mun[r[0]],zona:r[1],secao:r[2],a:r[3],b:r[4],o:r[5],br:r[6],nu:r[7]}))})();
+/* locais de votacao (data/locais.json, alinhado por posicao a SEC): carregado em segundo plano */
+const LOC={st:'load'};
+fetch('data/locais.json'+(SECJ.ver&&SECJ.ver.locais?'?v='+SECJ.ver.locais:'')).then(r=>{if(!r.ok)throw new Error(r.status);return r.json()}).then(j=>{
+  if(j.s.length!==SEC.length)throw new Error('locais divergentes');
+  LOC.l=j.locs;LOC.s=j.s;LOC.k=new Array(SEC.length);LOC.st='ok';
+}).catch(()=>{LOC.st='err'}).then(()=>{if($('#v-secoes').classList.contains('on'))renderSecoes()});
+function sLocOf(i){
+  if(LOC.st!=='ok'||i===undefined)return null;
+  const s=LOC.s[i],l=LOC.l[s[0]];
+  return {nome:l[0],end:l[1],bairro:l[2],cep:l[3],lat:l[4],lon:l[5],tipo:l[6],el:s[1],ac:s[2],ag:s[3],elAg:s[4]};
+}
+const sEsc=t=>String(t==null?'':t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const sLocName=i=>{const l=sLocOf(i);return l?l.nome:''};
+const sLocCols=(d,z)=>{if(z)return [];const l=sLocOf(d.i);return l?[l.nome,l.end,l.bairro]:['','','']};
+const sLocTd=d=>{const l=sLocOf(d.i);return `<td data-l="Local de votação" class="sloc">${l?`<b>${sEsc(title(l.nome))}</b><small>${sEsc(title(l.bairro))}</small>`:'<small>—</small>'}</td>`};
 const sName=c=>byCode[c]?byCode[c].name:c;
-let SS={cg:'gov',cand:'',mun:'all',zona:'all',sec:'',lead:'all',group:'sec',sort:'name',dir:1,page:0,per:25};
+let SS={cg:'gov',cand:'',loc:'',mun:'all',zona:'all',sec:'',lead:'all',group:'sec',sort:'name',dir:1,page:0,per:25};
 const sCols={
-  sec:[['name','Município'],['zona','Zona','r'],['secao','Seção','r'],['a','Braide','r'],['pa','% Braide','r'],['b','Orleans','r'],['pb','% Orleans','r'],['diff','Diferença','r'],['br','Brancos','r'],['nu','Nulos','r'],['lead','Líder']],
+  sec:[['name','Município'],['zona','Zona','r'],['secao','Seção','r'],['local','Local de votação'],['a','Braide','r'],['pa','% Braide','r'],['b','Orleans','r'],['pb','% Orleans','r'],['diff','Diferença','r'],['br','Brancos','r'],['nu','Nulos','r'],['lead','Líder']],
   zona:[['name','Município'],['zona','Zona','r'],['n','Seções','r'],['a','Braide','r'],['pa','% Braide','r'],['b','Orleans','r'],['pb','% Orleans','r'],['diff','Diferença','r'],['br','Brancos','r'],['nu','Nulos','r'],['lead','Líder']]
 };
-function sRow(o){const t=o.a+o.b;return {...o,name:sName(o.code),t,pa:t?o.a/t*100:0,pb:t?o.b/t*100:0,diff:o.a-o.b,lead:o.a>o.b?'a':o.b>o.a?'b':'e'}}
+function sRow(o){const t=o.a+o.b;return {...o,name:sName(o.code),local:sLocName(o.i),t,pa:t?o.a/t*100:0,pb:t?o.b/t*100:0,diff:o.a-o.b,lead:o.a>o.b?'a':o.b>o.a?'b':'e'}}
 function sBase(){ /* filtros de municipio, zona e secao (aplicados as secoes) */
   const n=SS.sec===''?null:parseInt(SS.sec,10);
-  return SEC.filter(s=>(SS.mun==='all'||s.code===SS.mun)&&(SS.zona==='all'||s.zona===SS.zona)&&(n===null||parseInt(s.secao,10)===n));
+  const q=norm(SS.loc.trim());
+  const hasLoc=s=>{if(!q)return true;if(LOC.st!=='ok')return false;const k=LOC.k[s.i]||(LOC.k[s.i]=norm(sLocName(s.i)+' '+LOC.l[LOC.s[s.i][0]][1]+' '+LOC.l[LOC.s[s.i][0]][2]));return k.includes(q)};
+  return SEC.filter(s=>(SS.mun==='all'||s.code===SS.mun)&&(SS.zona==='all'||s.zona===SS.zona)&&(n===null||parseInt(s.secao,10)===n)&&hasLoc(s));
 }
 function sRows(){
   let r;
@@ -47,7 +64,7 @@ function renderSecoes(){
   $('#sTbl thead').innerHTML='<tr>'+cols.map(c=>`<th data-k="${c[0]}" class="${c[2]||''} ${SS.sort===c[0]?'s':''}">${c[1]}<span class="ar">${SS.dir>0?'▲':'▼'}</span></th>`).join('')+'</tr>';
   const r=sRows(),pages=Math.max(1,Math.ceil(r.length/SS.per));SS.page=Math.min(SS.page,pages-1);
   const un=SS.group==='zona'?'zonas':'seções';
-  $('#sTbl tbody').innerHTML=r.length?r.slice(SS.page*SS.per,(SS.page+1)*SS.per).map(d=>`<tr data-c="${d.code}"><td class="cname"><b>${title(d.name)}</b></td><td class="r num" data-l="Zona">${parseInt(d.zona,10)}</td><td class="r num" data-l="${SS.group==='zona'?'Seções':'Seção'}">${SS.group==='zona'?fmt(d.n):d.secao}</td><td class="r num" data-l="Braide">${fmt(d.a)}</td><td class="r num" data-l="% Braide">${pp(d.pa)}%</td><td class="r num" data-l="Orleans">${fmt(d.b)}</td><td class="r num" data-l="% Orleans">${pp(d.pb)}%</td><td class="r num ${d.diff>0?'pos':d.diff<0?'neg':''}" data-l="Diferença">${d.diff>0?'+':d.diff<0?'−':''}${fmt(Math.abs(d.diff))}</td><td class="r num" data-l="Brancos">${fmt(d.br)}</td><td class="r num" data-l="Nulos">${fmt(d.nu)}</td><td class="clead">${d.lead==='e'?'<span class="tag">Empate</span>':`<span class="tag ${d.lead}">${NAME[d.lead]}</span>`}</td></tr>`).join(''):`<tr><td colspan="11" class="cempty"><div class="empty">${sEmptyMsg()}</div></td></tr>`;
+  $('#sTbl tbody').innerHTML=r.length?r.slice(SS.page*SS.per,(SS.page+1)*SS.per).map(d=>`<tr data-c="${d.code}" data-i="${SS.group==='sec'?d.i:''}"><td class="cname"><b>${title(d.name)}</b></td><td class="r num" data-l="Zona">${parseInt(d.zona,10)}</td><td class="r num" data-l="${SS.group==='zona'?'Seções':'Seção'}">${SS.group==='zona'?fmt(d.n):d.secao}</td>${SS.group==='sec'?sLocTd(d):''}<td class="r num" data-l="Braide">${fmt(d.a)}</td><td class="r num" data-l="% Braide">${pp(d.pa)}%</td><td class="r num" data-l="Orleans">${fmt(d.b)}</td><td class="r num" data-l="% Orleans">${pp(d.pb)}%</td><td class="r num ${d.diff>0?'pos':d.diff<0?'neg':''}" data-l="Diferença">${d.diff>0?'+':d.diff<0?'−':''}${fmt(Math.abs(d.diff))}</td><td class="r num" data-l="Brancos">${fmt(d.br)}</td><td class="r num" data-l="Nulos">${fmt(d.nu)}</td><td class="clead">${d.lead==='e'?'<span class="tag">Empate</span>':`<span class="tag ${d.lead}">${NAME[d.lead]}</span>`}</td></tr>`).join(''):`<tr><td colspan="11" class="cempty"><div class="empty">${sEmptyMsg()}</div></td></tr>`;
   $('#sCount').textContent=`${fmt(r.length)} ${un}`;
   $('#sPinfo').textContent=r.length?`Mostrando ${SS.page*SS.per+1}–${Math.min(r.length,(SS.page+1)*SS.per)} de ${fmt(r.length)}`:'';
   $('#sPbtn').innerHTML=`<button class="btn" id="spp" ${SS.page==0?'disabled':''}>← Anterior</button><span style="align-self:center">${SS.page+1} / ${pages}</span><button class="btn" id="spn" ${SS.page>=pages-1?'disabled':''}>Próxima →</button>`;
@@ -66,7 +83,7 @@ function renderSecoes(){
 function sSync(){
   const g=SS.cg==='gov';
   $$('#sCargo button').forEach(c=>c.classList.toggle('on',c.dataset.cg===SS.cg));
-  $('#sMun').value=SS.mun;sFillZonas();$('#sSec').value=SS.sec;
+  $('#sMun').value=SS.mun;sFillZonas();$('#sSec').value=SS.sec;$('#sLoc').value=SS.loc;
   $$('#sLead .chip').forEach(c=>c.classList.toggle('on',c.dataset.f===SS.lead));
   $$('#sGroup button').forEach(c=>c.classList.toggle('on',c.dataset.g===SS.group));
   $('#sLead').style.display=g?'':'none';$('#sCandBox').style.display=g?'none':'';
@@ -79,18 +96,19 @@ function showSecoes(code){closeDrawer();SS={...SS,mun:code,zona:'all',sec:'',lea
   sFillZonas();
 })();
 $('#sMun').onchange=e=>{SS.mun=e.target.value;SS.zona='all';SS.page=0;sFillZonas();renderSecoes()};
+$('#sLoc').oninput=e=>{SS.loc=e.target.value;SS.page=0;renderSecoes()};
 $('#sZona').onchange=e=>{SS.zona=e.target.value;SS.page=0;renderSecoes()};
 $('#sSec').oninput=e=>{SS.sec=e.target.value.replace(/\D/g,'').slice(0,4);e.target.value=SS.sec;SS.page=0;renderSecoes()};
 $('#sLead').onclick=e=>{const b=e.target.closest('.chip');if(!b)return;SS.lead=b.dataset.f;SS.page=0;sSync();renderSecoes()};
 $('#sGroup').onclick=e=>{const b=e.target.closest('button');if(!b)return;SS.group=b.dataset.g;SS.page=0;SS.sort='name';SS.dir=1;sSync();renderSecoes()};
-$('#sClear').onclick=()=>{SS={...SS,mun:'all',zona:'all',sec:'',lead:'all',cand:'',page:0};sSync();renderSecoes()};
-$('#sTbl').onclick=e=>{const th=e.target.closest('th');if(!th)return;const k=th.dataset.k;SS.dir=SS.sort===k?-SS.dir:(['name','lead','zona','secao','n','topName','topP'].includes(k)?1:-1);SS.sort=k;SS.page=0;renderSecoes()};
+$('#sClear').onclick=()=>{SS={...SS,mun:'all',zona:'all',sec:'',loc:'',lead:'all',cand:'',page:0};sSync();renderSecoes()};
+$('#sTbl').onclick=e=>{const tr=e.target.closest('tbody tr');if(tr&&tr.dataset.i){openSecao(+tr.dataset.i);return}const th=e.target.closest('th');if(!th)return;const k=th.dataset.k;SS.dir=SS.sort===k?-SS.dir:(['name','lead','zona','secao','n','topName','topP'].includes(k)?1:-1);SS.sort=k;SS.page=0;renderSecoes()};
 $('#sPbtn').onclick=e=>{if(e.target.id==='spp')SS.page--;if(e.target.id==='spn')SS.page++;renderSecoes()};
 $('#sExp').onclick=()=>{
   if(SS.cg!=='gov')return sExportCargo();
   const z=SS.group==='zona',rows=sRows();
-  const h=['codigo_municipio','municipio','zona',z?'secoes':'secao','braide','pct_braide','orleans','pct_orleans','diferenca','brancos','nulos','lider'];
-  const csv=[h.join(';'),...rows.map(d=>[d.code,d.name,d.zona,z?d.n:d.secao,d.a,d.pa.toFixed(2).replace('.',','),d.b,d.pb.toFixed(2).replace('.',','),d.diff,d.br,d.nu,d.lead==='e'?'Empate':NAME[d.lead]].join(';'))].join('\n');
+  const h=['codigo_municipio','municipio','zona',z?'secoes':'secao','braide','pct_braide','orleans','pct_orleans','diferenca','brancos','nulos','lider'].concat(z?[]:['local_votacao','endereco','bairro']);
+  const csv=[h.join(';'),...rows.map(d=>[d.code,d.name,d.zona,z?d.n:d.secao,d.a,d.pa.toFixed(2).replace('.',','),d.b,d.pb.toFixed(2).replace('.',','),d.diff,d.br,d.nu,d.lead==='e'?'Empate':NAME[d.lead]].concat(sLocCols(d,z)).join(';'))].join('\n');
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv'}));a.download=z?'zonas_filtradas.csv':'secoes_filtradas.csv';a.click();
 };
 
@@ -116,11 +134,11 @@ function sCargoRows(o){
   if(SS.group==='sec'){
     if(withC){
       const v=new Int32Array(N),a=o.c[SS.cand]||[];for(let k=0;k<a.length;k+=2)v[a[k]]=a[k+1];
-      rows=base.map(s=>({code:s.code,zona:s.zona,secao:s.secao,v:v[s.i],valid:o.vtot[s.i],br:o.br[s.i],nu:o.nu[s.i]}));
+      rows=base.map(s=>({i:s.i,code:s.code,zona:s.zona,secao:s.secao,v:v[s.i],valid:o.vtot[s.i],br:o.br[s.i],nu:o.nu[s.i]}));
     }else{
       if(!o.topN){o.topN=new Array(N);o.topV=new Int32Array(N);
         for(const k in o.c){const a=o.c[k];for(let i=0;i<a.length;i+=2){const x=a[i];if(a[i+1]>o.topV[x]){o.topV[x]=a[i+1];o.topN[x]=k}}}}
-      rows=base.map(s=>({code:s.code,zona:s.zona,secao:s.secao,top:o.topN[s.i],v:o.topV[s.i],valid:o.vtot[s.i],br:o.br[s.i],nu:o.nu[s.i]}));
+      rows=base.map(s=>({i:s.i,code:s.code,zona:s.zona,secao:s.secao,top:o.topN[s.i],v:o.topV[s.i],valid:o.vtot[s.i],br:o.br[s.i],nu:o.nu[s.i]}));
     }
   }else{
     const m=new Map(),zr=new Array(N);
@@ -130,14 +148,14 @@ function sCargoRows(o){
       m.forEach(g=>{let tv=0,tn='';if(g.m)g.m.forEach((v,k)=>{if(v>tv){tv=v;tn=k}});g.top=tn;g.v=tv;g.m=null})}
     rows=[...m.values()];
   }
-  rows.forEach(r=>{r.name=sName(r.code);r.pct=r.valid?r.v/r.valid*100:0;
+  rows.forEach(r=>{r.name=sName(r.code);r.local=r.i===undefined?'':sLocName(r.i);r.pct=r.valid?r.v/r.valid*100:0;
     if(!withC){const c=r.top?sCandOf(SS.cg,r.top):null;r.topName=c?c.nu:(r.top||'—');r.topP=party(c)}});
   const k=SS.sort,cmp=(x,y,f)=>{const u=x[f],v=y[f];return typeof u==='string'?u.localeCompare(v,'pt-BR'):(u||0)-(v||0)};
   rows.sort((x,y)=>(cmp(x,y,k)||cmp(x,y,'name')||cmp(x,y,'zona')||cmp(x,y,'secao'))*SS.dir);
   return rows;
 }
 function sCargoCols(){
-  const z=SS.group==='zona',b=[['name','Município'],['zona','Zona','r'],z?['n','Seções','r']:['secao','Seção','r']];
+  const z=SS.group==='zona',b=[['name','Município'],['zona','Zona','r'],z?['n','Seções','r']:['secao','Seção','r']].concat(z?[]:[['local','Local de votação']]);
   return b.concat(SS.cand
     ?[['v','Votos','r'],['pct','% dos válidos','r'],['valid','Válidos','r'],['br','Brancos','r'],['nu','Nulos','r']]
     :[['topName','Mais votado'],['topP','Partido'],['v','Votos','r'],['pct','% dos válidos','r'],['br','Brancos','r'],['nu','Nulos','r']]);
@@ -156,6 +174,7 @@ function renderSecoesCargo(){
       case 'name':return `<td class="cname"><b>${title(d.name)}</b></td>`;
       case 'zona':return `<td class="r num" data-l="Zona">${parseInt(d.zona,10)}</td>`;
       case 'secao':return `<td class="r num" data-l="Seção">${d.secao}</td>`;
+      case 'local':return sLocTd(d);
       case 'n':return `<td class="r num" data-l="Seções">${fmt(d.n)}</td>`;
       case 'topName':return `<td data-l="Mais votado"><b>${title(d.topName)}</b></td>`;
       case 'topP':return `<td data-l="Partido">${d.topP}</td>`;
@@ -166,7 +185,7 @@ function renderSecoesCargo(){
       default:return `<td class="r num" data-l="Nulos">${fmt(d.nu)}</td>`;
     }
   };
-  $('#sTbl tbody').innerHTML=r.length?r.slice(SS.page*SS.per,(SS.page+1)*SS.per).map(d=>'<tr data-c="'+d.code+'">'+cols.map(c=>cell(d,c[0])).join('')+'</tr>').join(''):`<tr><td colspan="${cols.length}" class="cempty"><div class="empty">Nenhuma ${z?'zona':'seção'} encontrada.</div></td></tr>`;
+  $('#sTbl tbody').innerHTML=r.length?r.slice(SS.page*SS.per,(SS.page+1)*SS.per).map(d=>'<tr data-c="'+d.code+'" data-i="'+(z?'':d.i)+'">'+cols.map(c=>cell(d,c[0])).join('')+'</tr>').join(''):`<tr><td colspan="${cols.length}" class="cempty"><div class="empty">Nenhuma ${z?'zona':'seção'} encontrada.</div></td></tr>`;
   $('#sCount').textContent=`${fmt(r.length)} ${z?'zonas':'seções'}`;
   $('#sPinfo').textContent=r.length?`Mostrando ${SS.page*SS.per+1}–${Math.min(r.length,(SS.page+1)*SS.per)} de ${fmt(r.length)}`:'';
   $('#sPbtn').innerHTML=`<button class="btn" id="spp" ${SS.page==0?'disabled':''}>← Anterior</button><span style="align-self:center">${SS.page+1} / ${pages}</span><button class="btn" id="spn" ${SS.page>=pages-1?'disabled':''}>Próxima →</button>`;
@@ -189,8 +208,8 @@ const d_p=c=>depLoad(SS.cg).parties[c.p].sg;
 function sExportCargo(){
   const o=SECD[SS.cg];if(!o||o.st!=='ok')return;
   const z=SS.group==='zona',r=sCargoRows(o),w=!!SS.cand;
-  const h=['codigo_municipio','municipio','zona',z?'secoes':'secao'].concat(w?['votos','pct_validos','validos']:['mais_votado','partido','votos','pct_validos']).concat(['brancos','nulos']);
-  const csv=[h.join(';'),...r.map(d=>[d.code,d.name,d.zona,z?d.n:d.secao].concat(w?[d.v,d.pct.toFixed(2).replace('.',','),d.valid]:[d.topName,d.topP,d.v,d.pct.toFixed(2).replace('.',',')]).concat([d.br,d.nu]).join(';'))].join('\n');
+  const h=['codigo_municipio','municipio','zona',z?'secoes':'secao'].concat(w?['votos','pct_validos','validos']:['mais_votado','partido','votos','pct_validos']).concat(['brancos','nulos'],z?[]:['local_votacao','endereco','bairro']);
+  const csv=[h.join(';'),...r.map(d=>[d.code,d.name,d.zona,z?d.n:d.secao].concat(w?[d.v,d.pct.toFixed(2).replace('.',','),d.valid]:[d.topName,d.topP,d.v,d.pct.toFixed(2).replace('.',',')]).concat([d.br,d.nu],sLocCols(d,z)).join(';'))].join('\n');
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv'}));a.download=SS.cg+(z?'_zonas':'_secoes')+'.csv';a.click();
 }
 $('#sCargo').onclick=e=>{const b=e.target.closest('button');if(!b)return;SS.cg=b.dataset.cg;SS.cand='';SS.page=0;SS.sort='name';SS.dir=1;sSync();renderSecoes()};
@@ -209,3 +228,38 @@ $('#sCargo').onclick=e=>{const b=e.target.closest('button');if(!b)return;SS.cg=b
   box.addEventListener('mousedown',e=>{const b=e.target.closest('button');if(b){e.preventDefault();pick(b.dataset.n)}});
   inp.addEventListener('blur',()=>setTimeout(()=>box.classList.remove('on'),120));
 })();
+
+/* ----- gaveta com os detalhes da secao (local de votacao, eleitorado, resultado) ----- */
+function openSecao(i){
+  const s=SEC[i],L=sLocOf(i),nom=s.a+s.b+s.o,tot=nom+s.br+s.nu;
+  const apt=L?L.el+L.elAg:0,pa=(s.a+s.b)?s.a/(s.a+s.b)*100:0,pb=100-pa;
+  const row=(k,v)=>v?`<div style="display:flex;justify-content:space-between;gap:14px;padding:9px 0;border-bottom:1px solid var(--line);font-size:13px"><span style="color:var(--tx2)">${k}</span><span style="text-align:right;font-weight:600">${v}</span></div>`:'';
+  let det='';
+  if(L){
+    const ag=L.ag?L.ag.split(','):[];
+    const map=L.lat&&L.lat!=='-1'?`<a class="btn" target="_blank" rel="noopener" style="text-decoration:none" href="https://www.openstreetmap.org/?mlat=${encodeURIComponent(L.lat)}&mlon=${encodeURIComponent(L.lon)}#map=17/${encodeURIComponent(L.lat)}/${encodeURIComponent(L.lon)}">Ver no mapa ↗</a>`:'';
+    det=`<div style="margin-top:18px">${row('Endereço',sEsc(title(L.end)))}${row('Bairro / localidade',sEsc(title(L.bairro)))}${row('CEP',sEsc(L.cep))}${row('Tipo de local',sEsc(L.tipo))}${row('Acessibilidade',L.ac?'Seção com acessibilidade':'Sem acessibilidade')}${row('Eleitores da seção',fmt(L.el))}${ag.length?row('Seções agregadas',ag.join(', ')+' ('+fmt(L.elAg)+' eleitores)'):''}${row('Eleitorado apto (total)',fmt(apt))}</div>${map?'<div style="margin-top:14px">'+map+'</div>':''}`;
+  }else det='<p class="sub" style="margin-top:18px">Dados do local de votação indisponíveis.</p>';
+  const comp=apt?`${pc(tot/apt*100,1)} do eleitorado`:'';
+  let cg='';
+  const o=SS.cg!=='gov'?SECD[SS.cg]:null;
+  if(o&&o.st==='ok'){
+    const d=depLoad(SS.cg),l=[];
+    for(const k in o.c){const a=o.c[k];for(let j=0;j<a.length;j+=2)if(a[j]===i){l.push([k,a[j+1]]);break}}
+    l.sort((x,y)=>y[1]-x[1]);
+    cg=`<h3 style="margin:22px 0 4px">${{senador:'Senador',federal:'Deputado Federal',estadual:'Deputado Estadual'}[SS.cg]} · mais votados na seção</h3>`+l.slice(0,6).map(([n,v])=>{const c=sCandOf(SS.cg,n);return row(sEsc(c?title(c.nu)+' · '+d.parties[c.p].sg:n),fmt(v)+' <small style="color:var(--tx3)">'+pp(o.vtot[i]?v/o.vtot[i]*100:0)+'%</small>')}).join('');
+  }
+  $('#drawer').innerHTML=`<button class="icon-btn x" onclick="closeDrawer()" aria-label="Fechar">✕</button>
+   <span class="tag ${s.a>s.b?'a':s.b>s.a?'b':''}">Zona ${parseInt(s.zona,10)} · Seção ${parseInt(s.secao,10)}</span>
+   <h2>${L?sEsc(title(L.nome)):'Seção '+parseInt(s.secao,10)}</h2><p style="color:var(--tx2);font-size:13px">${sEsc(title(sName(s.code)))} · código TSE ${s.code}</p>
+   <h3 style="margin:20px 0 6px">Governador · resultado da seção</h3>
+   <div class="bar"><i class="a" style="width:${pa}%" data-w="${pa}"></i><i class="b" style="width:${pb}%" data-w="${pb}"></i></div>
+   <div style="display:flex;justify-content:space-between;margin-top:8px;font-weight:700"><span style="color:var(--a)">${pc(pa,1)}</span><span style="color:var(--b)">${pc(pb,1)}</span></div>
+   <div class="stat">
+     <div><small>Braide</small><b class="num">${fmt(s.a)}</b></div><div><small>Orleans</small><b class="num">${fmt(s.b)}</b></div>
+     <div><small>Outros candidatos</small><b class="num">${fmt(s.o)}</b></div><div><small>Brancos · nulos</small><b class="num">${fmt(s.br)} · ${fmt(s.nu)}</b></div>
+     <div><small>Comparecimento</small><b class="num">${fmt(tot)}</b><small style="display:block">${comp}</small></div><div><small>Abstenção</small><b class="num">${apt?fmt(Math.max(0,apt-tot)):'—'}</b></div>
+   </div>
+   ${det}${cg}`;
+  $('#drawer').classList.add('on');$('#scrim').classList.add('on');$('#drawer').setAttribute('aria-hidden','false');
+}

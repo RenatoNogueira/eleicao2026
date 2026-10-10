@@ -50,3 +50,17 @@ npm run build
 O mesmo comando gera `data/secoes_{senador,federal,estadual}.json` (votos nominais por candidato e seção, formato
 esparso), copiados para `public/data/` e carregados sob demanda — por isso a aba precisa ser aberta por um servidor
 (Vercel ou `npx serve public`), não direto pelo arquivo.
+
+### Local de votação e detalhes da seção
+
+Clicar numa linha (modo "Por seção") abre a gaveta com local de votação, endereço, bairro, CEP, acessibilidade,
+eleitores, seções agregadas, comparecimento/abstenção e o resultado da seção. Há também a busca por local ou bairro.
+Os dados vêm de `locais_votacao_por_secao.csv`, gerado a partir do arquivo aberto do TSE
+"Eleitorado por local de votação" (zip de ~170 MB com todas as UFs; só o MA e o 1º turno são mantidos):
+
+```bash
+npm run dados:locais   # baixa o zip do TSE e regrava locais_votacao_por_secao.csv
+npm run build          # gera public/data/locais.json (carregado em segundo plano)
+```
+
+Rode `dados:locais` sempre depois de `dados:secoes`: o build exige que os dois CSV tenham as mesmas seções, na mesma ordem.

@@ -8,6 +8,7 @@ const ROOT = __dirname;
 const SRC = path.join(ROOT, 'src');
 const CSV = path.join(ROOT, 'resultados_governador_por_municipio.csv');
 const CSV_SEC = path.join(ROOT, 'resultados_governador_por_secao.csv');
+const CSV_LOC = path.join(ROOT, 'locais_votacao_por_secao.csv');
 const MAP = path.join(ROOT, 'data', 'mapa_ma.json');
 const PUBLIC_DIR = path.join(ROOT, 'public'); // pasta publicada no Vercel
 
@@ -53,6 +54,22 @@ function build() {
     const p = path.join(ROOT, 'data', `secoes_${k}.json`);
     if (fs.existsSync(p)) ver[k] = require('crypto').createHash('sha1').update(fs.readFileSync(p)).digest('hex').slice(0, 10);
   });
+  // Locais de votacao: alinhados por posicao ao CSV de secoes; locais repetidos (varias secoes na mesma escola) vao uma vez so
+  let locaisJson = null;
+  if (fs.existsSync(CSV_LOC)) {
+    const L = readCsv(CSV_LOC);
+    const sec = readCsv(CSV_SEC);
+    if (L.length !== sec.length || L.some((l, i) => l.codigo_municipio !== sec[i].codigo_municipio || l.zona !== sec[i].zona || l.secao !== sec[i].secao))
+      throw new Error('locais_votacao_por_secao.csv fora de sincronia com resultados_governador_por_secao.csv (rode npm run dados:locais)');
+    const idx = new Map(), locs = [];
+    const s2 = L.map(l => {
+      const k = [l.codigo_municipio, l.local_votacao, l.endereco].join('|');
+      if (!idx.has(k)) { idx.set(k, locs.length); locs.push([l.local_votacao, l.endereco, l.bairro, l.cep, l.latitude.replace(',', '.'), l.longitude.replace(',', '.'), l.tipo_local]); }
+      return [idx.get(k), +l.eleitores_secao, l.acessibilidade === 'Sim' ? 1 : 0, l.secoes_agregadas, +l.eleitores_agregados];
+    });
+    locaisJson = JSON.stringify({ locs, s: s2 });
+    ver.locais = require('crypto').createHash('sha1').update(locaisJson).digest('hex').slice(0, 10);
+  } else console.warn('Aviso: locais_votacao_por_secao.csv nao encontrado (rode npm run dados:locais); detalhes de local ficarao ausentes');
   const secoesJson = JSON.stringify({ mun, rows: secRows, ver });
 
   const tpl = path.join(SRC, 'index.ejs');
@@ -72,6 +89,7 @@ function build() {
   const html = ejs.render(fs.readFileSync(tpl, 'utf8'), { data, mapJson, secoesJson, gaId, flagUri, iconUri, depFederal: dep('federal'), depEstadual: dep('estadual'), depSenador: dep('senador') }, { filename: tpl });
   fs.mkdirSync(PUBLIC_DIR, { recursive: true });
   fs.writeFileSync(path.join(PUBLIC_DIR, 'index.html'), html, 'utf8');
+  if (locaisJson) { fs.mkdirSync(path.join(PUBLIC_DIR, 'data'), { recursive: true }); fs.writeFileSync(path.join(PUBLIC_DIR, 'data', 'locais.json'), locaisJson); }
   // Votos por secao de Senador/Deputados (carregados sob demanda pela aba Zonas e secoes)
   const dd = path.join(PUBLIC_DIR, 'data');
   fs.mkdirSync(dd, { recursive: true });
