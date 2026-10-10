@@ -1,19 +1,19 @@
 /* ---------- cities table ---------- */
-const cols=[['name','Município'],['t','Votos válidos','r'],['a','Braide','r'],['pa','% Braide','r'],['b','Orleans','r'],['pb','% Orleans','r'],['diff','Diferença','r'],['bar','Equilíbrio'],['lead','Líder']];
+const cols=[['name','Município'],['t','Votos válidos','r'],['a','Braide','r'],['b','Orleans','r'],['k','Felipe Camarão','r'],['diff','Diferença','r'],['bar','Equilíbrio'],['lead','Líder']];
 let S={q:'',f:'all',size:'all',sort:'name',dir:1,page:0,per:20};
 BANDS.forEach((b,i)=>$('#fSize').insertAdjacentHTML('beforeend',`<option value="${i}">${b[0]} votos</option>`));
 function filtered(){
   const q=norm(S.q);
   let r=D.filter(d=>(!q||norm(d.name).includes(q)||d.code.includes(q))&&(S.f==='all'||(S.f==='close'?Math.abs(d.pa-d.pb)<5:d.lead===S.f))&&(S.size==='all'||bandOf(d)==S.size));
   const k=S.sort;
-  r.sort((x,y)=>{const u=k==='bar'?Math.abs(x.pa-50):x[k],v=k==='bar'?Math.abs(y.pa-50):y[k];return (typeof u==='string'?u.localeCompare(v,'pt-BR'):u-v)*S.dir});
+  r.sort((x,y)=>{const u=k==='bar'?Math.abs(x.pa-x.pb):x[k],v=k==='bar'?Math.abs(y.pa-y.pb):y[k];return (typeof u==='string'?u.localeCompare(v,'pt-BR'):u-v)*S.dir});
   return r;
 }
 function renderTable(){
   $('#tbl thead').innerHTML='<tr>'+cols.map(c=>`<th data-k="${c[0]}" class="${c[2]||''} ${S.sort===c[0]?'s':''}">${c[1]}<span class="ar">${S.dir>0?'▲':'▼'}</span></th>`).join('')+'</tr>';
   const r=filtered(),pages=Math.max(1,Math.ceil(r.length/S.per));S.page=Math.min(S.page,pages-1);
   const sl=r.slice(S.page*S.per,(S.page+1)*S.per);
-  $('#tbl tbody').innerHTML=sl.length?sl.map(d=>`<tr data-c="${d.code}"><td class="cname"><b>${title(d.name)}</b></td><td class="r num" data-l="Votos válidos">${fmt(d.t)}</td><td class="r num" data-l="Braide">${fmt(d.a)}</td><td class="r num" data-l="% Braide">${pp(d.pa)}%</td><td class="r num" data-l="Orleans">${fmt(d.b)}</td><td class="r num" data-l="% Orleans">${pp(d.pb)}%</td><td class="r num ${d.diff>0?'pos':'neg'}" data-l="Diferença">${d.diff>0?'+':'−'}${fmt(Math.abs(d.diff))}</td><td class="cbar"><div class="mini"><i class="a" style="width:${d.pa}%"></i><i class="b" style="width:${d.pb}%"></i></div></td><td class="clead"><span class="tag ${d.lead}">${NAME[d.lead]}</span></td></tr>`).join(''):`<tr><td colspan="9" class="cempty"><div class="empty">Nenhum município encontrado.</div></td></tr>`;
+  $('#tbl tbody').innerHTML=sl.length?sl.map(d=>`<tr data-c="${d.code}"><td class="cname"><b>${title(d.name)}</b></td><td class="r num" data-l="Votos válidos">${fmt(d.t)}</td><td class="r num" data-l="Braide"><b>${fmt(d.a)}</b><small style="display:block;color:var(--tx3)">${pp(d.pa)}%</small></td><td class="r num" data-l="Orleans"><b>${fmt(d.b)}</b><small style="display:block;color:var(--tx3)">${pp(d.pb)}%</small></td><td class="r num" data-l="Felipe Camarão"><b>${fmt(d.k)}</b><small style="display:block;color:var(--tx3)">${pp(d.pk)}%</small></td><td class="r num ${d.diff>0?'pos':'neg'}" data-l="Diferença">${d.diff>0?'+':'−'}${fmt(Math.abs(d.diff))}</td><td class="cbar"><div class="mini"><i class="a" style="width:${d.pa}%"></i><i class="b" style="width:${d.pb}%"></i><i class="k" style="width:${d.pk}%"></i></div></td><td class="clead"><span class="tag ${d.lead}">${NAME[d.lead]}</span></td></tr>`).join(''):`<tr><td colspan="8" class="cempty"><div class="empty">Nenhum município encontrado.</div></td></tr>`;
   $('#count').textContent=`${r.length} de ${D.length} municípios`;
   $('#pinfo').textContent=r.length?`Mostrando ${S.page*S.per+1}–${Math.min(r.length,(S.page+1)*S.per)} de ${r.length}`:'';
   $('#pbtn').innerHTML=`<button class="btn" id="pp" ${S.page==0?'disabled':''}>← Anterior</button><span style="align-self:center">${S.page+1} / ${pages}</span><button class="btn" id="pn" ${S.page>=pages-1?'disabled':''}>Próxima →</button>`;
@@ -24,7 +24,7 @@ $('#q').oninput=e=>{S.q=e.target.value;S.page=0;renderTable()};
 $('#fSize').onchange=e=>{S.size=e.target.value;S.page=0;renderTable()};
 $('#fLead').onclick=e=>{const b=e.target.closest('.chip');if(!b)return;S.f=b.dataset.f;S.page=0;$$('#fLead .chip').forEach(c=>c.classList.toggle('on',c===b));renderTable()};
 $('#exp').onclick=()=>{
-  const rows=filtered();const h=['codigo','municipio','votos_validos','braide','pct_braide','orleans','pct_orleans','diferenca','lider'];
-  const csv=[h.join(';'),...rows.map(d=>[d.code,d.name,d.t,d.a,d.pa.toFixed(2).replace('.',','),d.b,d.pb.toFixed(2).replace('.',','),d.diff,NAME[d.lead]].join(';'))].join('\n');
+  const rows=filtered();const h=['codigo','municipio','votos_validos','braide','pct_braide','orleans','pct_orleans','camarao','pct_camarao','outros_e_sub_judice','brancos','nulos','diferenca','lider'];
+  const csv=[h.join(';'),...rows.map(d=>[d.code,d.name,d.t,d.a,d.pa.toFixed(2).replace('.',','),d.b,d.pb.toFixed(2).replace('.',','),d.k,d.pk.toFixed(2).replace('.',','),d.o,d.br,d.nu,d.diff,NAME[d.lead]].join(';'))].join('\n');
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv'}));a.download='municipios_filtrados.csv';a.click();
 };

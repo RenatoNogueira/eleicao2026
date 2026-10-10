@@ -5,11 +5,13 @@ function openDrawer(code){
   $('#drawer').innerHTML=`<button class="icon-btn x" onclick="closeDrawer()" aria-label="Fechar">✕</button>
    <span class="tag ${d.lead}">Lidera: ${NAME[d.lead]}</span>
    <h2>${title(d.name)}</h2><p style="color:var(--tx2);font-size:13px">Código TSE ${d.code}</p>
-   <div class="bar" style="margin-top:20px"><i class="a" style="width:${d.pa}%" data-w="${d.pa}"></i><i class="b" style="width:${d.pb}%" data-w="${d.pb}"></i></div>
-   <div style="display:flex;justify-content:space-between;margin-top:8px;font-weight:700"><span style="color:var(--a)" data-to="${d.pa}" data-kind="pct2">${pc(d.pa,2)}</span><span style="color:var(--b)" data-to="${d.pb}" data-kind="pct2">${pc(d.pb,2)}</span></div>
+   <div class="bar" style="margin-top:20px"><i class="a" style="width:${d.pa}%" data-w="${d.pa}"></i><i class="b" style="width:${d.pb}%" data-w="${d.pb}"></i><i class="k" style="width:${d.pk}%" data-w="${d.pk}"></i></div>
+   <div style="display:flex;justify-content:space-between;margin-top:8px;font-weight:700"><span style="color:var(--a)" data-to="${d.pa}" data-kind="pct2">${pc(d.pa,2)}</span><span style="color:var(--b)" data-to="${d.pb}" data-kind="pct2">${pc(d.pb,2)}</span><span style="color:#10b981" data-to="${d.pk}" data-kind="pct2">${pc(d.pk,2)}</span></div>
    <div class="stat">
      <div><small>Braide</small><b class="num" data-to="${d.a}" data-kind="int">${fmt(d.a)}</b></div><div><small>Orleans</small><b class="num" data-to="${d.b}" data-kind="int">${fmt(d.b)}</b></div>
      <div><small>Diferença</small><b class="num ${d.diff>0?'pos':'neg'}"><span data-to="${Math.abs(d.diff)}" data-kind="int" data-pre="${d.diff>0?'+':'−'}">${d.diff>0?'+':'−'}${fmt(Math.abs(d.diff))}</span></b></div><div><small>Votos válidos</small><b class="num" data-to="${d.t}" data-kind="int">${fmt(d.t)}</b></div>
+     <div><small>Felipe Camarão (PT)</small><b class="num">${fmt(d.k)}</b><small style="display:block">${pc(d.pk,2)}</small></div><div><small>Outros e sub judice</small><b class="num">${fmt(d.o)}</b><small style="display:block">${pc(d.o/d.t*100,2)}</small></div>
+     <div><small>Brancos</small><b class="num">${fmt(d.br)}</b></div><div><small>Nulos</small><b class="num">${fmt(d.nu)}</b></div>
      <div><small>Ranking por porte</small><b class="num">${ranks[d.code].size}º <span style="font-size:12px;color:var(--tx3)">de ${D.length}</span></b></div>
      <div><small>Ranking de equilíbrio</small><b class="num">${ranks[d.code].marg}º <span style="font-size:12px;color:var(--tx3)">de ${D.length}</span></b></div>
    </div>

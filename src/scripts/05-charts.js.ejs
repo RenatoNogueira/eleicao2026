@@ -28,7 +28,7 @@ function renderCharts(){
   /* scatter */
   const pts=l=>D.filter(d=>d.lead===l).map(d=>({x:d.t,y:d.pa,d}));
   mk('cScatter',{type:'scatter',data:{datasets:[{label:'Braide lidera',data:pts('a'),backgroundColor:A+'cc',pointRadius:5,pointHoverRadius:8},{label:'Orleans lidera',data:pts('b'),backgroundColor:B+'cc',pointRadius:5,pointHoverRadius:8}]},
-    options:baseOpts({scales:{x:{type:'logarithmic',title:{display:true,text:'Votos válidos no município (escala log)',color:css('--tx2')},ticks:{color:css('--tx2'),callback:v=>[3000,10000,30000,100000,300000].includes(v)?fmt(v):''},grid:{color:css('--line')},border:{display:false}},y:{min:0,max:100,title:{display:true,text:'% Braide',color:css('--tx2')},ticks:{color:css('--tx2'),callback:v=>v+'%'},grid:{color:css('--line')},border:{display:false}}},
+    options:baseOpts({scales:{x:{type:'logarithmic',title:{display:true,text:'Votos válidos no município (escala log)',color:css('--tx2')},ticks:{color:css('--tx2'),callback:v=>[3000,10000,30000,100000,300000].includes(v)?fmt(v):''},grid:{color:css('--line')},border:{display:false}},y:{min:0,max:100,title:{display:true,text:'% de Braide nos votos válidos',color:css('--tx2')},ticks:{color:css('--tx2'),callback:v=>v+'%'},grid:{color:css('--line')},border:{display:false}}},
       onClick:(e,els)=>{if(els.length){const p=charts.cScatter.data.datasets[els[0].datasetIndex].data[els[0].index];openDrawer(p.d.code)}},
       onHover:(e,els)=>{e.native.target.style.cursor=els.length?'pointer':'default'},
       plugins:{...baseOpts().plugins,tooltip:{...baseOpts().plugins.tooltip,callbacks:{title:i=>title(i[0].raw.d.name),label:c=>[` Braide ${pc(c.raw.d.pa)} · Orleans ${pc(c.raw.d.pb)}`,` ${fmt(c.raw.x)} votos`]}}}})});

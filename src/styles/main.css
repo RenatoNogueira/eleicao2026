@@ -370,3 +370,8 @@ body:has(header .sugg.on)::after{content:"";position:fixed;inset:0;z-index:25;ba
 html{scrollbar-gutter:stable}
 html.no-scroll,html.no-scroll body{overflow:hidden}
 .drawer,.more-sheet{overscroll-behavior:contain}
+
+/* terceiro candidato (Felipe Camarao) nas barras de resultado */
+.bar i.k,.mini i.k{background:#10b981}
+/* tabela de municipios: celulas compactas para caber sem rolagem horizontal em 1024px */
+@media(min-width:701px){#tbl th{padding:12px 9px}#tbl td{padding:10px 9px}#tbl .mini{width:90px}}

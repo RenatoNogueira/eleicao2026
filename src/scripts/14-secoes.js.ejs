@@ -1,6 +1,6 @@
 /* ---------- zonas e secoes ---------- */
 const SECJ=JSON.parse($('#secoes-data').textContent);
-const SEC=(()=>{const j=SECJ;return j.rows.map((r,i)=>({i,code:j.mun[r[0]],zona:r[1],secao:r[2],a:r[3],b:r[4],o:r[5],br:r[6],nu:r[7]}))})();
+const SEC=(()=>{const j=SECJ;return j.rows.map((r,i)=>({i,code:j.mun[r[0]],zona:r[1],secao:r[2],a:r[3],b:r[4],o:r[5],br:r[6],nu:r[7],k:r[8]||0}))})();
 /* locais de votacao (data/locais.json, alinhado por posicao a SEC): carregado em segundo plano */
 const LOC={st:'load'};
 fetch('data/locais.json'+(SECJ.ver&&SECJ.ver.locais?'?v='+SECJ.ver.locais:'')).then(r=>{if(!r.ok)throw new Error(r.status);return r.json()}).then(j=>{
@@ -22,7 +22,7 @@ const sCols={
   sec:[['name','Município'],['zona','Zona','r'],['secao','Seção','r'],['local','Local de votação'],['a','Braide','r'],['b','Orleans','r'],['diff','Diferença','r'],['bn','Brancos · nulos','r'],['lead','Líder']],
   zona:[['name','Município'],['zona','Zona','r'],['n','Seções','r'],['a','Braide','r'],['b','Orleans','r'],['diff','Diferença','r'],['bn','Brancos · nulos','r'],['lead','Líder']]
 };
-function sRow(o){const t=o.a+o.b;return {...o,bn:o.br+o.nu,name:sName(o.code),local:sLocName(o.i),t,pa:t?o.a/t*100:0,pb:t?o.b/t*100:0,diff:o.a-o.b,lead:o.a>o.b?'a':o.b>o.a?'b':'e'}}
+function sRow(o){const t=o.a+o.b+(o.k||0)+(o.o||0);return {...o,bn:o.br+o.nu,name:sName(o.code),local:sLocName(o.i),t,pa:t?o.a/t*100:0,pb:t?o.b/t*100:0,diff:o.a-o.b,lead:o.a>o.b?'a':o.b>o.a?'b':'e'}}
 function sBase(){ /* filtros de municipio, zona e secao (aplicados as secoes) */
   const n=SS.sec===''?null:parseInt(SS.sec,10);
   const q=norm(SS.loc.trim());
@@ -33,7 +33,7 @@ function sRows(){
   let r;
   if(SS.group==='zona'){
     const m=new Map();
-    sBase().forEach(s=>{const k=s.code+'|'+s.zona;const g=m.get(k)||m.set(k,{code:s.code,zona:s.zona,n:0,a:0,b:0,o:0,br:0,nu:0}).get(k);g.n++;g.a+=s.a;g.b+=s.b;g.o+=s.o;g.br+=s.br;g.nu+=s.nu});
+    sBase().forEach(s=>{const k=s.code+'|'+s.zona;const g=m.get(k)||m.set(k,{code:s.code,zona:s.zona,n:0,a:0,b:0,k:0,o:0,br:0,nu:0}).get(k);g.n++;g.a+=s.a;g.b+=s.b;g.k+=s.k;g.o+=s.o;g.br+=s.br;g.nu+=s.nu});
     r=[...m.values()].map(sRow);
   }else r=sBase().map(sRow);
   if(SS.lead!=='all')r=r.filter(x=>x.lead===SS.lead);
@@ -69,13 +69,13 @@ function renderSecoes(){
   $('#sPinfo').textContent=r.length?`Mostrando ${SS.page*SS.per+1}–${Math.min(r.length,(SS.page+1)*SS.per)} de ${fmt(r.length)}`:'';
   $('#sPbtn').innerHTML=`<button class="btn" id="spp" ${SS.page==0?'disabled':''}>← Anterior</button><span style="align-self:center">${SS.page+1} / ${pages}</span><button class="btn" id="spn" ${SS.page>=pages-1?'disabled':''}>Próxima →</button>`;
   /* totais do recorte filtrado (secoes) */
-  const b=SS.group==='zona'?r:sRows(),tot=b.reduce((s,x)=>({a:s.a+x.a,b:s.b+x.b,br:s.br+x.br,nu:s.nu+x.nu,n:s.n+(x.n||1)}),{a:0,b:0,br:0,nu:0,n:0});
-  const t=tot.a+tot.b,pa=t?tot.a/t*100:0,pb=t?tot.b/t*100:0,df=tot.a-tot.b;
+  const b=SS.group==='zona'?r:sRows(),tot=b.reduce((s,x)=>({a:s.a+x.a,b:s.b+x.b,k:s.k+(x.k||0),o:s.o+(x.o||0),br:s.br+x.br,nu:s.nu+x.nu,n:s.n+(x.n||1)}),{a:0,b:0,k:0,o:0,br:0,nu:0,n:0});
+  const t=tot.a+tot.b+tot.k+tot.o,pa=t?tot.a/t*100:0,pb=t?tot.b/t*100:0,df=tot.a-tot.b;
   const scope=SS.mun==='all'?'Maranhão':title(sName(SS.mun));
   const kp=[
     ['tx','Seções',fmt(tot.n),`${scope}${SS.zona!=='all'?' · zona '+parseInt(SS.zona,10):''}`],
-    ['a','Braide',fmt(tot.a),pc(pa,2)+' entre os dois'],
-    ['b','Orleans',fmt(tot.b),pc(pb,2)+' entre os dois'],
+    ['a','Braide',fmt(tot.a),pc(pa,2)+' dos votos válidos'],
+    ['b','Orleans',fmt(tot.b),pc(pb,2)+' dos votos válidos'],
     [df>=0?'a':'b','Diferença',`${df>0?'+':df<0?'−':''}${fmt(Math.abs(df))}`,`${fmt(tot.br)} brancos · ${fmt(tot.nu)} nulos`]
   ];
   $('#sKpis').innerHTML=kp.map(k=>`<div class="card kpi"><div class="lbl"><span class="dot" style="background:var(--${k[0]})"></span>${k[1]}</div><div class="val num">${k[2]}</div><div class="ft">${k[3]}</div></div>`).join('');
@@ -229,8 +229,8 @@ $('#sCargo').onclick=e=>{const b=e.target.closest('button');if(!b)return;SS.cg=b
 
 /* ----- gaveta com os detalhes da secao (local de votacao, eleitorado, resultado) ----- */
 function openSecao(i){
-  const s=SEC[i],L=sLocOf(i),nom=s.a+s.b+s.o,tot=nom+s.br+s.nu;
-  const apt=L?L.el+L.elAg:0,pa=(s.a+s.b)?s.a/(s.a+s.b)*100:0,pb=100-pa;
+  const s=SEC[i],L=sLocOf(i),nom=s.a+s.b+s.k+s.o,tot=nom+s.br+s.nu;
+  const apt=L?L.el+L.elAg:0,pa=nom?s.a/nom*100:0,pb=nom?s.b/nom*100:0;
   const row=(k,v)=>v?`<div style="display:flex;justify-content:space-between;gap:14px;padding:9px 0;border-bottom:1px solid var(--line);font-size:13px"><span style="color:var(--tx2)">${k}</span><span style="text-align:right;font-weight:600">${v}</span></div>`:'';
   let det='';
   if(L){
@@ -255,7 +255,8 @@ function openSecao(i){
    <div style="display:flex;justify-content:space-between;margin-top:8px;font-weight:700"><span style="color:var(--a)">${pc(pa,1)}</span><span style="color:var(--b)">${pc(pb,1)}</span></div>
    <div class="stat">
      <div><small>Braide</small><b class="num">${fmt(s.a)}</b></div><div><small>Orleans</small><b class="num">${fmt(s.b)}</b></div>
-     <div><small>Outros candidatos</small><b class="num">${fmt(s.o)}</b></div><div><small>Brancos · nulos</small><b class="num">${fmt(s.br)} · ${fmt(s.nu)}</b></div>
+     <div><small>Felipe Camarão</small><b class="num">${fmt(s.k)}</b><small style="display:block">${pc(nom?s.k/nom*100:0,1)}</small></div><div><small>Outros candidatos</small><b class="num">${fmt(s.o)}</b></div>
+     <div><small>Votos válidos</small><b class="num">${fmt(nom)}</b></div><div><small>Brancos · nulos</small><b class="num">${fmt(s.br)} · ${fmt(s.nu)}</b></div>
      <div><small>Comparecimento</small><b class="num">${fmt(tot)}</b><small style="display:block">${comp}</small></div><div><small>Abstenção</small><b class="num">${apt?fmt(Math.max(0,apt-tot)):'—'}</b></div>
    </div>
    ${det}${cg}`;

@@ -76,6 +76,6 @@ function renderAnalysis(){
    ['🏆',`${sweep.length} municípios com 70%+ para um lado`,sweep.length?`${sweep.filter(d=>d.lead==='a').length} para Braide e ${sweep.filter(d=>d.lead==='b').length} para Orleans — bastiões consolidados.`:'Nenhum município teve placar tão amplo.']];
   $('#insights').innerHTML=I.map(i=>`<div class="card ins"><div class="ic">${i[0]}</div><div><h4>${i[1]}</h4><p>${i[2]}</p></div></div>`).join('');
   const row=(arr,f)=>arr.map((d,i)=>`<li data-c="${d.code}"><span class="n">${String(i+1).padStart(2,'0')}</span><span><b>${title(d.name)}</b> <span style="color:var(--tx3);font-size:12px">· ${fmt(d.t)} votos</span></span>${f(d)}</li>`).join('');
-  $('#closest').innerHTML=row([...D].sort((x,y)=>Math.abs(x.pa-50)-Math.abs(y.pa-50)).slice(0,10),d=>`<span class="tag ${d.lead}">${pp(d.pa)} × ${pp(d.pb)}</span>`);
+  $('#closest').innerHTML=row([...D].sort((x,y)=>Math.abs(x.pa-x.pb)-Math.abs(y.pa-y.pb)).slice(0,10),d=>`<span class="tag ${d.lead}">${pp(d.pa)} × ${pp(d.pb)}</span>`);
   $('#strong').innerHTML=row([...D].sort((x,y)=>Math.max(y.pa,y.pb)-Math.max(x.pa,x.pb)).slice(0,10),d=>`<span class="tag ${d.lead}">${NAME[d.lead]} ${pp(Math.max(d.pa,d.pb))}%</span>`);
 }

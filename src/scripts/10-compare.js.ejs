@@ -11,7 +11,7 @@ $('#v-compare').addEventListener('click',e=>{
   const g=e.target.closest('#cmpCargo button');if(g){CMPL=g.dataset.c;renderCompare();return}
   const x=e.target.closest('.sel button');if(x){toggleCmp(x.dataset.c);return}
   const p=e.target.closest('[data-pre]');if(p){const k=p.dataset.pre;
-    CMP=(k==='big'?[...D].sort((x,y)=>y.t-x.t):k==='close'?[...D].sort((x,y)=>Math.abs(x.pa-50)-Math.abs(y.pa-50)):k==='a'?[...D].sort((x,y)=>y.a-x.a):[...D].sort((x,y)=>y.b-x.b)).slice(0,4).map(d=>d.code);renderCompare()}
+    CMP=(k==='big'?[...D].sort((x,y)=>y.t-x.t):k==='close'?[...D].sort((x,y)=>Math.abs(x.pa-x.pb)-Math.abs(y.pa-y.pb)):k==='a'?[...D].sort((x,y)=>y.a-x.a):[...D].sort((x,y)=>y.b-x.b)).slice(0,4).map(d=>d.code);renderCompare()}
 });
 let cmpSig=null; // evita reanimar os cards quando so o tema muda
 function renderCompare(){
@@ -20,11 +20,12 @@ function renderCompare(){
   if(CMP.length<1){body.innerHTML='<div class="card empty" style="margin-top:16px">Selecione municípios acima (ou use um atalho) para iniciar a comparação.</div>';Object.values(charts).forEach(()=>{});charts.cmp1?.destroy();charts.cmp2?.destroy();return}
   const ds=CMP.map(c=>byCode[c]);
   body.innerHTML=`<div class="grid cgrid" style="margin-top:16px" id="ccards">
-    ${[...ds,{name:'MARANHÃO (ESTADO)',a:ST.a,b:ST.b,t:ST.t,pa:ST.pa,pb:ST.pb,diff:ST.diff,lead:ST.diff>0?'a':'b',state:1}].map((d,i)=>`<div class="card ccard" ${d.state?'style="border-style:dashed"':''}>
+    ${[...ds,{name:'MARANHÃO (ESTADO)',a:ST.a,b:ST.b,k:ST.k,t:ST.t,pa:ST.pa,pb:ST.pb,pk:ST.pk,diff:ST.diff,lead:ST.diff>0?'a':'b',state:1}].map((d,i)=>`<div class="card ccard" ${d.state?'style="border-style:dashed"':''}>
       <div class="nm" style="${d.state?'':`border-left:4px solid ${CC[i]};padding-left:10px`}">${title(d.name)}</div>
-      <div class="bar" style="margin:12px 0;height:10px"><i class="a" style="width:${d.pa}%" data-w="${d.pa}"></i><i class="b" style="width:${d.pb}%" data-w="${d.pb}"></i></div>
+      <div class="bar" style="margin:12px 0;height:10px"><i class="a" style="width:${d.pa}%" data-w="${d.pa}"></i><i class="b" style="width:${d.pb}%" data-w="${d.pb}"></i><i class="k" style="width:${d.pk}%" data-w="${d.pk}"></i></div>
       <div class="row"><span>Braide</span><b class="num"><span data-to="${d.pa}" data-kind="pct1">${pp(d.pa)}%</span> · <span data-to="${d.a}" data-kind="int">${fmt(d.a)}</span></b></div>
       <div class="row"><span>Orleans</span><b class="num"><span data-to="${d.pb}" data-kind="pct1">${pp(d.pb)}%</span> · <span data-to="${d.b}" data-kind="int">${fmt(d.b)}</span></b></div>
+      <div class="row"><span>Felipe Camarão</span><b class="num"><span data-to="${d.pk}" data-kind="pct1">${pp(d.pk)}%</span> · <span data-to="${d.k}" data-kind="int">${fmt(d.k)}</span></b></div>
       <div class="row"><span>Diferença</span><b class="num ${d.diff>0?'pos':'neg'}"><span data-to="${Math.abs(d.diff)}" data-kind="int" data-pre="${d.diff>0?'+':'−'}">${d.diff>0?'+':'−'}${fmt(Math.abs(d.diff))}</span></b></div>
       <div class="row"><span>Votos válidos</span><b class="num" data-to="${d.t}" data-kind="int">${fmt(d.t)}</b></div>
       ${d.state?`<div class="row"><span>Municípios</span><b><span data-to="${ST.wa}" data-kind="int">${ST.wa}</span> × <span data-to="${ST.wb}" data-kind="int">${ST.wb}</span></b></div>`:`<div class="row"><span>% do estado</span><b class="num" data-to="${d.t/ST.t*100}" data-kind="pct2">${pc(d.t/ST.t*100,2)}</b></div>`}
@@ -38,7 +39,7 @@ function renderCompare(){
   const sig=CMP.join(',');if(cmpSig!==sig){cmpSig=sig;animateIn($('#ccards'),1100)}
   cmpLegisCharts(ds);
   const A=css('--a'),B=css('--b'),L=ds.map(d=>title(d.name));
-  mk('cmp1',{type:'bar',data:{labels:L,datasets:[{label:'% Braide',data:ds.map(d=>d.pa),backgroundColor:A,borderRadius:7},{label:'% Orleans',data:ds.map(d=>d.pb),backgroundColor:B,borderRadius:7},{type:'line',label:'Média do estado (Braide)',data:ds.map(()=>ST.pa),borderColor:css('--tx2'),borderDash:[6,5],pointRadius:0,borderWidth:2}]},
+  mk('cmp1',{type:'bar',data:{labels:L,datasets:[{label:'% Braide',data:ds.map(d=>d.pa),backgroundColor:A,borderRadius:7},{label:'% Orleans',data:ds.map(d=>d.pb),backgroundColor:B,borderRadius:7},{label:'% Camarão',data:ds.map(d=>d.pk),backgroundColor:'#10b981',borderRadius:7},{type:'line',label:'Média do estado (Braide)',data:ds.map(()=>ST.pa),borderColor:css('--tx2'),borderDash:[6,5],pointRadius:0,borderWidth:2}]},
     options:baseOpts({scales:{x:{grid:{display:false},ticks:{color:css('--tx2')},border:{display:false}},y:{min:0,max:100,grid:{color:css('--line')},ticks:{color:css('--tx2'),callback:v=>v+'%'},border:{display:false}}}})});
   mk('cmp2',{type:'bar',data:{labels:L,datasets:[{label:'Braide',data:ds.map(d=>d.a),backgroundColor:A,borderRadius:7},{label:'Orleans',data:ds.map(d=>d.b),backgroundColor:B,borderRadius:7}]},
     options:baseOpts({plugins:{...baseOpts().plugins,tooltip:{...baseOpts().plugins.tooltip,callbacks:{label:c=>` ${c.dataset.label}: ${fmt(c.raw)}`}}}})});
@@ -82,6 +83,6 @@ function cmpLegisCharts(ds){
   mk('cmpL2',{type:'bar',data:{labels:T.map(x=>title(x.nu)),datasets:cols.map((c,i)=>({label:L[i],data:T.map(x=>{const v=c.mi<0?x.v:d.mv[x.i][c.mi];return vvOf(c)?v/vvOf(c)*100:0}),backgroundColor:col(i),borderRadius:6}))},options:opts});
 }
 function cmpText(ds){
-  const bigA=[...ds].sort((x,y)=>y.pa-x.pa)[0],bigB=[...ds].sort((x,y)=>y.pb-x.pb)[0],tight=[...ds].sort((x,y)=>Math.abs(x.pa-50)-Math.abs(y.pa-50))[0],big=[...ds].sort((x,y)=>y.t-x.t)[0];
+  const bigA=[...ds].sort((x,y)=>y.pa-x.pa)[0],bigB=[...ds].sort((x,y)=>y.pb-x.pb)[0],tight=[...ds].sort((x,y)=>Math.abs(x.pa-x.pb)-Math.abs(y.pa-y.pb))[0],big=[...ds].sort((x,y)=>y.t-x.t)[0];
   return `Braide tem seu melhor desempenho em <b>${title(bigA.name)}</b> (${pc(bigA.pa)}); Orleans em <b>${title(bigB.name)}</b> (${pc(bigB.pb)}). O mais equilibrado é <b>${title(tight.name)}</b> (${pp(Math.abs(tight.pa-tight.pb))} p.p. de diferença) e o maior colégio é <b>${title(big.name)}</b>, com ${fmt(big.t)} votos válidos (${pc(big.t/ST.t*100)} do estado).`;
 }

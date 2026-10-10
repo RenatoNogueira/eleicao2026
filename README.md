@@ -39,7 +39,7 @@ npm run build
 
 A aba **Zonas e seções** filtra o resultado de Governador, Senador, Deputado Federal e Deputado Estadual por
 município, zona e número da seção (com busca de candidato, visão agrupada por zona e exportação CSV). Os dados vêm de `resultados_governador_por_secao.csv`
-(uma linha por seção: Braide, Orleans, outros, brancos e nulos), gerado a partir dos boletins de urna
+(uma linha por seção: Braide, Orleans, Felipe Camarão, outros, brancos e nulos), gerado a partir dos boletins de urna
 públicos do TSE. Para atualizar:
 
 ```bash
@@ -78,3 +78,15 @@ npm run build
 
 O `npm run dados:presidente` baixa os dois turnos (o código do 2º turno vem do catálogo do TSE). Enquanto o 2º turno
 não tem votos apurados, a aba mostra "aguardando"; depois da apuração basta rodar o comando de novo, o build e publicar.
+
+## Governador (percentuais do TSE)
+
+`resultados_governador_por_municipio.csv` traz o resultado completo de Governador, com os percentuais calculados como o
+TSE divulga: votos do candidato / votos válidos computados (válidos + anulados sub judice), considerando todos os
+candidatos (Braide, Orleans, Felipe Camarão e demais). As colunas `*_%_entre_os_dois` (só Braide × Orleans) foram mantidas
+por compatibilidade, mas o painel usa `*_%_validos`. Para atualizar:
+
+```bash
+npm run dados:governador   # baixa os 217 municípios e regrava o CSV (confere a soma com o total do estado)
+npm run build
+```

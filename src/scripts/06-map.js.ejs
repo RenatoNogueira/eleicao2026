@@ -4,8 +4,8 @@ let MODE='margin';
 const szMin=Math.min(...D.map(d=>d.t)),szMax=Math.max(...D.map(d=>d.t));
 function fillOf(d,mode){
   if(mode==='size'){const t=Math.log(d.t/szMin)/Math.log(szMax/szMin);return `color-mix(in srgb,var(--ok) ${Math.round(14+86*Math.pow(t,.7))}%,var(--bg2))`}
-  if(mode==='close'){return Math.abs(d.pa-50)<5?`var(--${d.lead})`:'var(--bg2)'}
-  const t=Math.min(1,Math.abs(d.pa-50)/32);return `color-mix(in srgb,var(--${d.lead}) ${Math.round(22+78*t)}%,var(--bg2))`;
+  if(mode==='close'){return Math.abs(d.pa-d.pb)<5?`var(--${d.lead})`:'var(--bg2)'}
+  const t=Math.min(1,Math.abs(d.pa-d.pb)/50);return `color-mix(in srgb,var(--${d.lead}) ${Math.round(22+78*t)}%,var(--bg2))`;
 }
 function mapSVG(mode){
   return `<svg viewBox="${MAP.vb}" role="img" aria-label="Mapa do Maranhão">${D.map(d=>MAP.p[d.code]?`<path data-c="${d.code}" d="${MAP.p[d.code]}" style="fill:${fillOf(d,mode)}"></path>`:'').join('')}</svg>`;
@@ -21,16 +21,16 @@ function renderMap(){
   $('#mapFull').innerHTML=mapSVG(MODE);attachZoom($('#mapFull'),false);
   $('[data-legend="1"]').innerHTML=legendHTML(MODE);
   $$('#mapMode button').forEach(b=>b.classList.toggle('on',b.dataset.m===MODE));
-  const cl=D.filter(d=>Math.abs(d.pa-50)<5);
+  const cl=D.filter(d=>Math.abs(d.pa-d.pb)<5);
   $('#mapNote').textContent=MODE==='close'?`${cl.length} municípios com diferença menor que 5 p.p.`:MODE==='size'?'Escala logarítmica de votos válidos':'Cor mais forte = margem maior';
-  const src=MODE==='size'?[...D].sort((x,y)=>y.t-x.t):MODE==='close'?[...D].sort((x,y)=>Math.abs(x.pa-50)-Math.abs(y.pa-50)):[...D].sort((x,y)=>Math.abs(y.diff)-Math.abs(x.diff));
+  const src=MODE==='size'?[...D].sort((x,y)=>y.t-x.t):MODE==='close'?[...D].sort((x,y)=>Math.abs(x.pa-x.pb)-Math.abs(y.pa-y.pb)):[...D].sort((x,y)=>Math.abs(y.diff)-Math.abs(x.diff));
   $('#mapListT').textContent=MODE==='size'?'Maiores municípios':MODE==='close'?'Mais disputados':'Maiores margens (votos)';
-  $('#mapListS').textContent=MODE==='size'?'Por votos válidos':MODE==='close'?'Menor diferença percentual':'Diferença absoluta de votos';
+  $('#mapListS').textContent=MODE==='size'?'Por votos válidos':MODE==='close'?'Menor diferença entre os percentuais (p.p.)':'Diferença absoluta de votos';
   $('#mapList').innerHTML=src.slice(0,8).map((d,i)=>`<li data-c="${d.code}"><span class="n">${String(i+1).padStart(2,'0')}</span><span><b>${title(d.name)}</b></span><span class="tag ${d.lead}">${MODE==='size'?fmt(d.t):MODE==='close'?pp(d.pa)+' × '+pp(d.pb):(d.diff>0?'+':'−')+fmt(Math.abs(d.diff))}</span></li>`).join('');
   mapInfo(null);
 }
 function mapInfo(d){
-  $('#mapInfo').innerHTML=d?`<span class="tag ${d.lead}">Lidera: ${NAME[d.lead]}</span><h3 style="font-size:18px;margin:8px 0 10px">${title(d.name)}</h3><div class="bar" style="margin:0 0 8px;height:10px"><i class="a" style="width:${d.pa}%"></i><i class="b" style="width:${d.pb}%"></i></div><div style="display:flex;justify-content:space-between;font-size:13px;font-weight:700"><span style="color:var(--a)">${pp(d.pa)}% · ${fmt(d.a)}</span><span style="color:var(--b)">${pp(d.pb)}% · ${fmt(d.b)}</span></div><p class="sub" style="margin:10px 0 0">${fmt(d.t)} votos válidos · diferença ${fmt(Math.abs(d.diff))}</p>`
+  $('#mapInfo').innerHTML=d?`<span class="tag ${d.lead}">Lidera: ${NAME[d.lead]}</span><h3 style="font-size:18px;margin:8px 0 10px">${title(d.name)}</h3><div class="bar" style="margin:0 0 8px;height:10px"><i class="a" style="width:${d.pa}%"></i><i class="b" style="width:${d.pb}%"></i><i class="k" style="width:${d.pk}%"></i></div><div style="display:flex;justify-content:space-between;font-size:13px;font-weight:700"><span style="color:var(--a)">${pp(d.pa)}% · ${fmt(d.a)}</span><span style="color:var(--b)">${pp(d.pb)}% · ${fmt(d.b)}</span></div><p class="sub" style="margin:10px 0 0">Felipe Camarão ${pp(d.pk)}% · ${fmt(d.t)} votos válidos · diferença ${fmt(Math.abs(d.diff))}</p>`
    :`<h3>Passe o mouse no mapa</h3><p class="sub" style="margin:4px 0 0">Veja os números de cada município aqui. Clique para abrir os detalhes completos.</p>`;
 }
 /* zoom & pan (viewBox based) */
@@ -68,7 +68,7 @@ document.addEventListener('mousemove',e=>{
   const p=e.target.closest?.('.mapbox path');
   if(!p){tip.classList.remove('on');return}
   const isDep=!!p.closest('#depMap'),isPres=!!p.closest('#presMap'),d=byCode[p.dataset.c];
-  tip.innerHTML=isPres?presTipHTML(p.dataset.c):isDep?depTipHTML(p.dataset.c):`<b>${title(d.name)}</b><span style="color:var(--a)">Braide ${pp(d.pa)}%</span> · <span style="color:var(--b)">Orleans ${pp(d.pb)}%</span><br><span style="color:var(--tx2)">${fmt(d.t)} votos válidos</span>`;
+  tip.innerHTML=isPres?presTipHTML(p.dataset.c):isDep?depTipHTML(p.dataset.c):`<b>${title(d.name)}</b><span style="color:var(--a)">Braide ${pp(d.pa)}%</span> · <span style="color:var(--b)">Orleans ${pp(d.pb)}%</span> · <span style="color:#10b981">Camarão ${pp(d.pk)}%</span><br><span style="color:var(--tx2)">${fmt(d.t)} votos válidos</span>`;
   tip.classList.add('on');
   const w=tip.offsetWidth,h=tip.offsetHeight;
   tip.style.left=Math.min(innerWidth-w-10,e.clientX+14)+'px';tip.style.top=Math.min(innerHeight-h-10,e.clientY+14)+'px';

@@ -4,7 +4,7 @@
       <div class="cand a"><div class="avatar"><b>EB</b><img src="https://resultados.tse.jus.br/oficial/ele2026/6259/fotos/ma/100002545679.jpeg" alt="Eduardo Braide" loading="eager" onerror="this.remove()"></div><div class="txt"><small>Candidato</small><strong>Eduardo Braide</strong><span class="pct num" id="hA">–</span></div></div>
       <div class="cand b"><div class="avatar"><b>OB</b><img src="https://resultados.tse.jus.br/oficial/ele2026/6259/fotos/ma/100002543869.jpeg" alt="Orleans Brandão" loading="eager" onerror="this.remove()"></div><div class="txt"><small>Candidato</small><strong>Orleans Brandão</strong><span class="pct num" id="hB">–</span></div></div>
     </div>
-    <div class="bar"><i class="a" id="barA" style="width:50%"></i><i class="b" id="barB" style="width:50%"></i></div>
+    <div class="bar"><i class="a" id="barA" style="width:50%"></i><i class="b" id="barB" style="width:50%"></i><i class="k" id="barK" style="width:0%"></i></div>
     <div class="hero-foot" id="heroFoot"></div>
   </div>
 
@@ -15,13 +15,13 @@
     <div class="card"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px"><div><h3>Mapa do Maranhão por município</h3><p class="sub">Cor = líder · intensidade = margem. Clique num município para detalhes.</p></div><button class="btn" onclick="go('map')">Tela cheia →</button></div><div class="mapbox" id="mapOv"></div><div class="legend" data-legend="margin"></div></div>
     <div style="display:grid;gap:16px;align-content:start">
       <div class="card"><h3>Municípios vencidos</h3><p class="sub">Quem liderou em cada município</p><div class="ch short"><canvas id="cWon"></canvas></div></div>
-      <div class="card"><h3>Distribuição do voto de Braide</h3><p class="sub">Municípios por faixa de % de Braide</p><div class="ch short"><canvas id="cHist"></canvas></div></div>
+      <div class="card"><h3>Distribuição do voto de Braide</h3><p class="sub">Municípios por faixa de % de Braide (sobre os votos válidos do município)</p><div class="ch short"><canvas id="cHist"></canvas></div></div>
     </div>
   </div>
 
   <div class="sec-title">Por porte do município</div>
   <div class="grid g2">
-    <div class="card"><h3>Votos por faixa de porte</h3><p class="sub">Total de votos válidos entre os dois, agrupado pelo tamanho do eleitorado votante</p><div class="ch"><canvas id="cBandVotes"></canvas></div></div>
+    <div class="card"><h3>Votos por faixa de porte</h3><p class="sub">Votos de Braide e de Orleans, com os municípios agrupados pelo total de votos válidos</p><div class="ch"><canvas id="cBandVotes"></canvas></div></div>
     <div class="card"><h3>Vitórias por faixa de porte</h3><p class="sub">Nº de municípios vencidos em cada faixa</p><div class="ch"><canvas id="cBandWins"></canvas></div></div>
   </div>
 

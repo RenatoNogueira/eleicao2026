@@ -1,6 +1,7 @@
 /* ---------- data ---------- */
-const D = RAW.map(r=>{const t=r.a+r.b;return {code:r.c,name:r.n,a:r.a,b:r.b,t,pa:r.a/t*100,pb:r.b/t*100,diff:r.a-r.b,lead:r.a>r.b?'a':'b',src:r.s}});
-const ST = (()=>{const a=D.reduce((s,d)=>s+d.a,0),b=D.reduce((s,d)=>s+d.b,0),t=a+b;return {a,b,t,pa:a/t*100,pb:b/t*100,diff:a-b,wa:D.filter(d=>d.lead==='a').length,wb:D.filter(d=>d.lead==='b').length}})();
+/* pa/pb/pk = % dos votos validos como o TSE divulga (todos os candidatos na base); ha/hb = so entre os dois */
+const D = RAW.map(r=>{const h=r.a+r.b,t=r.v||h,k=r.k||0;return {code:r.c,name:r.n,a:r.a,b:r.b,k,o:(r.o||0)+(r.sj||0),br:r.br||0,nu:r.nu||0,t,pa:r.a/t*100,pb:r.b/t*100,pk:k/t*100,ha:r.a/h*100,hb:r.b/h*100,diff:r.a-r.b,lead:r.a>r.b?'a':'b',src:r.s}});
+const ST = (()=>{const S=f=>D.reduce((s,d)=>s+d[f],0),a=S('a'),b=S('b'),k=S('k'),t=S('t');return {a,b,k,o:S('o'),br:S('br'),nu:S('nu'),t,pa:a/t*100,pb:b/t*100,pk:k/t*100,ha:a/(a+b)*100,hb:b/(a+b)*100,diff:a-b,wa:D.filter(d=>d.lead==='a').length,wb:D.filter(d=>d.lead==='b').length}})();
 const byCode = Object.fromEntries(D.map(d=>[d.code,d]));
 const fmt = n=>Math.round(n).toLocaleString('pt-BR');
 const pc = (n,d=1)=>n.toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d})+'%';

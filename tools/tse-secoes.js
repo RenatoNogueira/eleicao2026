@@ -14,6 +14,7 @@ const CARGOS = { 3: 'governador', 5: 'senador', 6: 'federal', 7: 'estadual' }; /
 const CARGO = 3; // Governador (CSV)
 const N_BRAIDE = process.env.BRAIDE || '55';
 const N_ORLEANS = process.env.ORLEANS || '15';
+const N_CAMARAO = process.env.CAMARAO || '13';
 const OUT = path.join(ROOT, 'resultados_governador_por_secao.csv');
 const CSV_MUN = path.join(ROOT, 'resultados_governador_por_municipio.csv');
 const CACHE = process.env.CACHE || path.join(require('os').tmpdir(), `tse-secoes-v2-${UF}.jsonl`); // retomada de execucoes interrompidas
@@ -23,10 +24,11 @@ async function fetchRetry(url, kind, tries = 4) {
   for (let i = 1; i <= tries; i++) {
     try {
       const r = await fetch(url);
+      if (r.status === 404) { const e = new Error(`404 ${url}`); e.noRetry = true; throw e; }
       if (!r.ok) throw new Error(`${r.status} ${url}`);
       return kind === 'json' ? JSON.parse(await r.text()) : Buffer.from(await r.arrayBuffer());
     } catch (e) {
-      if (i === tries) throw e;
+      if (i === tries || e.noRetry) throw e;
       await new Promise(r => setTimeout(r, 500 * i));
     }
   }
@@ -136,8 +138,14 @@ async function main() {
 
   if (missing.length) console.warn(`Aviso: ${missing.length} secoes sem BU publicado (404) foram ignoradas`);
   const done_rows = rows.filter(Boolean);
-  const head = 'codigo_municipio;municipio;zona;secao;braide_votos;orleans_votos;outros_votos;brancos;nulos;total_votos';
-  const lines = done_rows.map(r => [r.mun, r.nome, r.zona, r.secao, r.braide, r.orleans, r.outros, r.branco, r.nulo, r.braide + r.orleans + r.outros + r.branco + r.nulo].join(';'));
+  // outros_votos = demais candidatos (sem Braide, Orleans e Camarao); camarao_votos vai em coluna propria
+  done_rows.forEach(r => {
+    const g = r.cg[CARGO].cand;
+    r.camarao = g[N_CAMARAO] || 0;
+    r.outros = Object.values(g).reduce((s, v) => s + v, 0) - r.braide - r.orleans - r.camarao;
+  });
+  const head = 'codigo_municipio;municipio;zona;secao;braide_votos;orleans_votos;outros_votos;brancos;nulos;total_votos;camarao_votos';
+  const lines = done_rows.map(r => [r.mun, r.nome, r.zona, r.secao, r.braide, r.orleans, r.outros, r.branco, r.nulo, r.braide + r.orleans + r.camarao + r.outros + r.branco + r.nulo, r.camarao].join(';'));
   fs.writeFileSync(OUT, '﻿' + [head, ...lines].join('\n') + '\n', 'utf8');
   console.log(`${path.basename(OUT)}: ${done_rows.length} secoes`);
 
@@ -176,4 +184,3 @@ async function main() {
 }
 
 main().catch(e => { console.error(e); process.exit(1); });
-  if (fs.existsSync(CACHE)) fs.readFileSync(CACHE, "utf8").split(/\r?\n/).filter(Boolean).forEach(l => { const o = JSON.parse(l); cache.set(key(o), o); });

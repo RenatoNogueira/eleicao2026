@@ -32,6 +32,12 @@ function build() {
     a: parseInt(r.braide_votos, 10),
     b: parseInt(r.orleans_votos, 10),
     s: r.fonte,
+    k: parseInt(r.camarao_votos, 10) || 0,        // Felipe Camarao
+    o: parseInt(r.outros_votos, 10) || 0,         // demais candidatos
+    sj: parseInt(r.anulados_sub_judice, 10) || 0, // anulados sub judice (contam na base do TSE)
+    br: parseInt(r.brancos, 10) || 0,
+    nu: parseInt(r.nulos, 10) || 0,
+    v: parseInt(r.validos_tse, 10) || 0,          // base dos percentuais do TSE (validos + sub judice)
   }));
   const bad = data.filter(d => !d.c || Number.isNaN(d.a) || Number.isNaN(d.b));
   if (bad.length) throw new Error(`Linhas invalidas no CSV: ${bad.length}`);
@@ -44,7 +50,7 @@ function build() {
   const mun = [], munIdx = new Map();
   const secRows = (fs.existsSync(CSV_SEC) ? readCsv(CSV_SEC) : []).map(r => {
     if (!munIdx.has(r.codigo_municipio)) { munIdx.set(r.codigo_municipio, mun.length); mun.push(r.codigo_municipio); }
-    return [munIdx.get(r.codigo_municipio), r.zona, r.secao, +r.braide_votos, +r.orleans_votos, +r.outros_votos, +r.brancos, +r.nulos];
+    return [munIdx.get(r.codigo_municipio), r.zona, r.secao, +r.braide_votos, +r.orleans_votos, +r.outros_votos, +r.brancos, +r.nulos, +(r.camarao_votos || 0)];
   });
   if (secRows.some(r => r.slice(3).some(Number.isNaN))) throw new Error('Linhas invalidas no CSV de secoes');
   if (!secRows.length) console.warn('Aviso: resultados_governador_por_secao.csv nao encontrado; aba Zonas e secoes ficara vazia');

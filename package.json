@@ -8,7 +8,8 @@
     "dados:legislativo": "node tools/tse-deputados.js",
     "dados:secoes": "node tools/tse-secoes.js",
     "dados:locais": "node tools/tse-locais.js",
-    "dados:presidente": "node tools/tse-presidente.js"
+    "dados:presidente": "node tools/tse-presidente.js",
+    "dados:governador": "node tools/tse-governador.js"
   },
   "devDependencies": {
     "ejs": "^3.1.10"

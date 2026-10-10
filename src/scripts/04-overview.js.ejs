@@ -1,12 +1,12 @@
 /* ---------- overview ---------- */
 function renderOverview(){
   [['#hA',ST.pa],['#hB',ST.pb]].forEach(([s,v])=>{const e=$(s);e.dataset.to=v;e.dataset.kind='pct2';e.textContent=pc(v,2)});
-  $('#barA').dataset.w=ST.pa;$('#barB').dataset.w=ST.pb;
+  $('#barA').dataset.w=ST.pa;$('#barB').dataset.w=ST.pb;$('#barK').dataset.w=ST.pk;
   const lead=ST.diff>0?'Braide':'Orleans';
-  $('#heroFoot').innerHTML=`<span><b class="num" data-to="${ST.a}" data-kind="int">${fmt(ST.a)}</b> votos de Braide</span><span><b class="num" data-to="${ST.b}" data-kind="int">${fmt(ST.b)}</b> votos de Orleans</span><span>Vantagem de <b class="num" data-to="${Math.abs(ST.diff)}" data-kind="int">${fmt(Math.abs(ST.diff))}</b> votos para <b>${lead}</b> (${pp(Math.abs(ST.pa-ST.pb))} p.p.)</span><span><b data-to="${D.length}" data-kind="int">${D.length}</b> municípios apurados</span>`;
+  $('#heroFoot').innerHTML=`<span><b class="num" data-to="${ST.a}" data-kind="int">${fmt(ST.a)}</b> votos de Braide</span><span><b class="num" data-to="${ST.b}" data-kind="int">${fmt(ST.b)}</b> votos de Orleans</span><span>Vantagem de <b class="num" data-to="${Math.abs(ST.diff)}" data-kind="int">${fmt(Math.abs(ST.diff))}</b> votos para <b>${lead}</b> (${pp(Math.abs(ST.pa-ST.pb))} p.p.)</span><span><b class="num" data-to="${ST.k}" data-kind="int">${fmt(ST.k)}</b> votos de Felipe Camarão (${pp(ST.pk)}%)</span><span><b data-to="${D.length}" data-kind="int">${D.length}</b> municípios apurados</span>`;
   const kp=[
-   ['a','Votos Braide',ST.a,`${pc(ST.pa)} do total entre os dois`],
-   ['b','Votos Orleans',ST.b,`${pc(ST.pb)} do total entre os dois`],
+   ['a','Votos Braide',ST.a,`${pc(ST.pa)} dos votos válidos`],
+   ['b','Votos Orleans',ST.b,`${pc(ST.pb)} dos votos válidos`],
    ['a','Municípios de Braide',ST.wa,`${pc(ST.wa/D.length*100)} dos municípios`],
    ['b','Municípios de Orleans',ST.wb,`${pc(ST.wb/D.length*100)} dos municípios`]];
   $('#kpis').innerHTML=kp.map(k=>`<div class="card kpi"><div class="lbl"><span class="dot" style="background:var(--${k[0]})"></span>${k[1]}</div><div class="val num" data-to="${k[2]}" data-kind="int">${fmt(k[2])}</div><div class="ft">${k[3]}</div></div>`).join('');
