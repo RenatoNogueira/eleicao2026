@@ -25,6 +25,16 @@ function sRows(){
   r.sort((x,y)=>(cmp(x,y,k)||cmp(x,y,'name')||cmp(x,y,'zona')||cmp(x,y,'secao'))*SS.dir);
   return r;
 }
+/* mensagem de vazio: explica qual filtro zerou o resultado (ex.: chip de lider) */
+function sEmptyMsg(){
+  const un=SS.group==='zona'?'zona':'seção';
+  if(SS.lead!=='all'){
+    const l=SS.lead;SS.lead='all';const all=sRows();SS.lead=l;
+    if(all.length){const o=all[0],w=o.lead==='a'?'b':'a';
+      return `Nenhuma ${un} com ${NAME[l]} na frente neste recorte. ${all.length===1?'O único resultado tem '+(o.lead==='e'?'empate':NAME[o.lead]+' na frente ('+fmt(o.a)+' × '+fmt(o.b)+')'):all.length+' resultados têm outro líder'}. <button class="btn" onclick="SS.lead='all';SS.page=0;sSync();renderSecoes()">Mostrar todos</button>`}
+  }
+  return `Nenhuma ${un} encontrada para os filtros aplicados. <button class="btn" onclick="$('#sClear').click()">Limpar filtros</button>`;
+}
 function sFillZonas(){
   const zs=new Set();(SS.mun==='all'?SEC:SEC.filter(s=>s.code===SS.mun)).forEach(s=>zs.add(s.zona));
   const l=[...zs].sort();if(SS.zona!=='all'&&!zs.has(SS.zona))SS.zona='all';
@@ -37,7 +47,7 @@ function renderSecoes(){
   $('#sTbl thead').innerHTML='<tr>'+cols.map(c=>`<th data-k="${c[0]}" class="${c[2]||''} ${SS.sort===c[0]?'s':''}">${c[1]}<span class="ar">${SS.dir>0?'▲':'▼'}</span></th>`).join('')+'</tr>';
   const r=sRows(),pages=Math.max(1,Math.ceil(r.length/SS.per));SS.page=Math.min(SS.page,pages-1);
   const un=SS.group==='zona'?'zonas':'seções';
-  $('#sTbl tbody').innerHTML=r.length?r.slice(SS.page*SS.per,(SS.page+1)*SS.per).map(d=>`<tr data-c="${d.code}"><td class="cname"><b>${title(d.name)}</b></td><td class="r num" data-l="Zona">${parseInt(d.zona,10)}</td><td class="r num" data-l="${SS.group==='zona'?'Seções':'Seção'}">${SS.group==='zona'?fmt(d.n):d.secao}</td><td class="r num" data-l="Braide">${fmt(d.a)}</td><td class="r num" data-l="% Braide">${pp(d.pa)}%</td><td class="r num" data-l="Orleans">${fmt(d.b)}</td><td class="r num" data-l="% Orleans">${pp(d.pb)}%</td><td class="r num ${d.diff>0?'pos':d.diff<0?'neg':''}" data-l="Diferença">${d.diff>0?'+':d.diff<0?'−':''}${fmt(Math.abs(d.diff))}</td><td class="r num" data-l="Brancos">${fmt(d.br)}</td><td class="r num" data-l="Nulos">${fmt(d.nu)}</td><td class="clead">${d.lead==='e'?'<span class="tag">Empate</span>':`<span class="tag ${d.lead}">${NAME[d.lead]}</span>`}</td></tr>`).join(''):`<tr><td colspan="11" class="cempty"><div class="empty">Nenhuma ${SS.group==='zona'?'zona':'seção'} encontrada.</div></td></tr>`;
+  $('#sTbl tbody').innerHTML=r.length?r.slice(SS.page*SS.per,(SS.page+1)*SS.per).map(d=>`<tr data-c="${d.code}"><td class="cname"><b>${title(d.name)}</b></td><td class="r num" data-l="Zona">${parseInt(d.zona,10)}</td><td class="r num" data-l="${SS.group==='zona'?'Seções':'Seção'}">${SS.group==='zona'?fmt(d.n):d.secao}</td><td class="r num" data-l="Braide">${fmt(d.a)}</td><td class="r num" data-l="% Braide">${pp(d.pa)}%</td><td class="r num" data-l="Orleans">${fmt(d.b)}</td><td class="r num" data-l="% Orleans">${pp(d.pb)}%</td><td class="r num ${d.diff>0?'pos':d.diff<0?'neg':''}" data-l="Diferença">${d.diff>0?'+':d.diff<0?'−':''}${fmt(Math.abs(d.diff))}</td><td class="r num" data-l="Brancos">${fmt(d.br)}</td><td class="r num" data-l="Nulos">${fmt(d.nu)}</td><td class="clead">${d.lead==='e'?'<span class="tag">Empate</span>':`<span class="tag ${d.lead}">${NAME[d.lead]}</span>`}</td></tr>`).join(''):`<tr><td colspan="11" class="cempty"><div class="empty">${sEmptyMsg()}</div></td></tr>`;
   $('#sCount').textContent=`${fmt(r.length)} ${un}`;
   $('#sPinfo').textContent=r.length?`Mostrando ${SS.page*SS.per+1}–${Math.min(r.length,(SS.page+1)*SS.per)} de ${fmt(r.length)}`:'';
   $('#sPbtn').innerHTML=`<button class="btn" id="spp" ${SS.page==0?'disabled':''}>← Anterior</button><span style="align-self:center">${SS.page+1} / ${pages}</span><button class="btn" id="spn" ${SS.page>=pages-1?'disabled':''}>Próxima →</button>`;
