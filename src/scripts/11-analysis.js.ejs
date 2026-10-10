@@ -1,5 +1,5 @@
 /* ---------- analysis ---------- */
-let ANL='federal';
+let ANL='federal',ANLD=null;
 const ANL_NAME={senador:'senador',federal:'deputado federal',estadual:'deputado estadual'};
 function renderAnLeg(){
   const d=depLoad(ANL),N=d.mun.length;
@@ -13,6 +13,7 @@ function renderAnLeg(){
     const sh=d.vv[mi]?cv/d.vv[mi]*100:0;
     if(ci>=0&&(!best||sh>best.sh))best={sh,ci,mi};
   }
+  ANLD={lc,rp:lp};
   const rc=[...lc].sort((a,b)=>b[1].length-a[1].length),rp=[...lp].sort((a,b)=>b[1].length-a[1].length);
   const mname=mi=>title(byCode[d.mun[mi]]?byCode[d.mun[mi]].name:d.mun[mi]);
   const top=d.cands[0],topN=(lc.get(top.i)||[]).length;
@@ -23,10 +24,42 @@ function renderAnLeg(){
     ['🎯',best?`${mname(best.mi)}: ${pp(best.sh)}% para um só nome`:'—',best?`${title(d.cands[best.ci].nu)} (${d.parties[d.cands[best.ci].p].sg}) tem a maior fatia dos votos válidos entre todos os municípios; em ${half} municípios o líder passa de 50%.`:'']
   ];
   $('#anLegIns').innerHTML=I.map(i=>`<div class="card ins"><div class="ic">${i[0]}</div><div><h4>${i[1]}</h4><p>${i[2]}</p></div></div>`).join('');
-  const li=(arr,f)=>arr.map(([k,ms],i)=>`<li><span class="n">${String(i+1).padStart(2,'0')}</span><span>${f(k)}</span><span class="tag mut">${ms.length} municípios</span></li>`).join('');
-  $('#anLegCand').innerHTML=li(rc.slice(0,10),ci=>{const c=d.cands[ci];return `<b>${title(c.nu)}</b> <span style="color:var(--tx3);font-size:12px">· ${d.parties[c.p].sg} · ${fmt(c.v)} votos</span>`});
-  $('#anLegParty').innerHTML=li(rp.slice(0,10),pi=>`<b>${d.parties[pi].sg}</b> <span style="color:var(--tx3);font-size:12px">· ${fmt(d.parties[pi].tot)} votos</span>`);
+  const li=(arr,f,kind)=>arr.map(([k,ms],i)=>`<li data-leg="${kind}:${k}"><span class="n">${String(i+1).padStart(2,'0')}</span><span>${f(k)}</span><span class="tag mut">${ms.length} municípios</span></li>`).join('');
+  $('#anLegCand').innerHTML=li(rc.slice(0,10),ci=>{const c=d.cands[ci];return `<b>${title(c.nu)}</b> <span style="color:var(--tx3);font-size:12px">· ${d.parties[c.p].sg} · ${fmt(c.v)} votos</span>`},'c');
+  $('#anLegParty').innerHTML=li(rp.slice(0,10),pi=>`<b>${d.parties[pi].sg}</b> <span style="color:var(--tx3);font-size:12px">· ${fmt(d.parties[pi].tot)} votos</span>`,'p');
 }
+/* gaveta: municipios em que o candidato / partido lidera */
+function openAnLeg(kind,k){
+  const d=depLoad(ANL),N=d.mun.length,isC=kind==='c';
+  const ms=(isC?ANLD.lc:ANLD.rp).get(k)||[];
+  const val=mi=>isC?d.mv[k][mi]:d.pm[k][mi];
+  const rows=ms.map(mi=>({mi,v:val(mi),vv:d.vv[mi]})).sort((a,b)=>b.v-a.v);
+  const sum=rows.reduce((s,r)=>s+r.v,0),mx=Math.max(...rows.map(r=>r.v),1);
+  const mname=mi=>{const c=d.mun[mi];return title(byCode[c]?byCode[c].name:c)};
+  let head,sub,stats;
+  if(isC){
+    const c=d.cands[k],pr=d.parties[c.p];
+    head=title(c.nu);sub=`${title(c.nm)} · ${pr.sg} · Nº ${c.n} · ${d.nome}`;
+    stats=[['Votos',fmt(c.v)],['% dos válidos',pc(c.pc,2)],['Posição geral',`${c.rank}º de ${d.cands.length}`],['Lidera em',`${ms.length} de ${N} municípios`],['Votos nesses municípios',fmt(sum)],['% dos seus votos',pc(c.v?sum/c.v*100:0,1)]];
+  }else{
+    const p=d.parties[k];
+    head=p.sg;sub=`${p.nm||p.sg}${p.fed?' · federação '+p.fed:''} · ${d.nome}`;
+    stats=[['Votos (nominais + legenda)',fmt(p.tot)],['Candidatos',fmt(p.cands)],['Eleitos',fmt(p.eleitos)],['Lidera em',`${ms.length} de ${N} municípios`],['Votos nesses municípios',fmt(sum)],['% dos votos do partido',pc(p.tot?sum/p.tot*100:0,1)]];
+  }
+  $('#drawer').innerHTML=`<button class="icon-btn x" onclick="closeDrawer()" aria-label="Fechar">✕</button>
+   <span class="tag ${isC?'a':'b'}">${isC?'Candidato':'Partido'} · ${ANL_NAME[ANL]}</span>
+   <h2 style="margin-top:12px">${sEscA(head)}</h2><p style="color:var(--tx2);font-size:13px">${sEscA(sub)}</p>
+   <div class="stat">${stats.map(s=>`<div><small>${s[0]}</small><b class="num">${s[1]}</b></div>`).join('')}</div>
+   <p class="sub" style="margin:0 0 6px;font-weight:700;color:var(--tx)">Municípios em que lidera (${rows.length})</p>
+   <ul class="rank">${rows.map((r,j)=>`<li data-c="${d.mun[r.mi]}"><span class="n">${String(j+1).padStart(2,'0')}</span><span><b>${mname(r.mi)}</b></span><span class="num">${fmt(r.v)} <small style="color:var(--tx3)">${pp(r.vv?r.v/r.vv*100:0)}%</small></span><span></span><div class="bg"><i style="width:${r.v/mx*100}%;background:var(--${isC?'a':'b'})"></i></div></li>`).join('')}</ul>
+   <p class="sub" style="margin-top:12px">Clique em um município para ver o resultado de governador.</p>`;
+  $('#drawer').classList.add('on');animateIn($('#drawer'),900);$('#scrim').classList.add('on');$('#drawer').setAttribute('aria-hidden','false');
+}
+const sEscA=t=>String(t==null?'':t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#v-analysis').addEventListener('click',e=>{
+  const li=e.target.closest('li[data-leg]');if(!li)return;
+  const [kind,k]=li.dataset.leg.split(':');openAnLeg(kind,+k);
+});
 $('#anLegCargo').onclick=e=>{const b=e.target.closest('button');if(b){ANL=b.dataset.c;renderAnLeg()}};
 function renderAnalysis(){
   renderAnLeg();
