@@ -365,3 +365,8 @@ body:has(header .sugg.on)::after{content:"";position:fixed;inset:0;z-index:25;ba
   .more-sheet button.on svg{color:var(--a)}
   .drawer{padding-bottom:calc(26px + env(safe-area-inset-bottom))}
 }
+
+/* modal aberto: so o proprio modal rola; a pagina por tras fica travada */
+html{scrollbar-gutter:stable}
+html.no-scroll,html.no-scroll body{overflow:hidden}
+.drawer,.more-sheet{overscroll-behavior:contain}

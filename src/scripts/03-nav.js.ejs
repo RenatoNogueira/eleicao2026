@@ -1,6 +1,12 @@
 /* ---------- nav ---------- */
 let skTimer=null,curView=null,pgRaf=0;
 const MORE_VIEWS=['compare','analysis','secoes','deps'];
+/* trava a rolagem da pagina enquanto uma gaveta (modal) ou a folha "Mais" estiver aberta */
+(()=>{
+  const root=document.documentElement,els=['#drawer','#moreSheet'].map(s=>$(s));
+  const upd=()=>root.classList.toggle('no-scroll',els.some(e=>e.classList.contains('on')));
+  const mo=new MutationObserver(upd);els.forEach(e=>mo.observe(e,{attributes:true,attributeFilter:['class']}));
+})();
 function closeMore(){$('#moreSheet').classList.remove('on');$('#moreScrim').classList.remove('on');$('#moreSheet').setAttribute('aria-hidden','true')}
 function openMore(){$('#moreSheet').classList.add('on');$('#moreScrim').classList.add('on');$('#moreSheet').setAttribute('aria-hidden','false')}
 /* barra de progresso: uma por card de grafico/mapa/tabela + uma fina no topo da pagina */
