@@ -319,3 +319,7 @@ html::-webkit-scrollbar-track{background:linear-gradient(var(--sb-track),var(--s
 
 .sloc{min-width:200px;max-width:320px}.sloc b{display:block;font-weight:600}.sloc small{display:block;color:var(--tx3);font-size:11.5px}
 #sTbl tbody tr:not([data-i=""]){cursor:pointer}
+/* tabela de secoes: celulas compactas para caber sem rolagem horizontal */
+#sTbl th{padding:12px 9px}#sTbl td{padding:10px 9px}
+#sTbl td.sloc{white-space:normal;min-width:180px;max-width:300px;line-height:1.3}
+#sTbl td.r b{display:block;font-weight:600}#sTbl td.r small{display:block;color:var(--tx3);font-size:11.5px;font-weight:500}

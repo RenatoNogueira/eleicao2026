@@ -19,10 +19,10 @@ const sLocTd=d=>{const l=sLocOf(d.i);return `<td data-l="Local de votação" cla
 const sName=c=>byCode[c]?byCode[c].name:c;
 let SS={cg:'gov',cand:'',loc:'',mun:'all',zona:'all',sec:'',lead:'all',group:'sec',sort:'name',dir:1,page:0,per:25};
 const sCols={
-  sec:[['name','Município'],['zona','Zona','r'],['secao','Seção','r'],['local','Local de votação'],['a','Braide','r'],['pa','% Braide','r'],['b','Orleans','r'],['pb','% Orleans','r'],['diff','Diferença','r'],['br','Brancos','r'],['nu','Nulos','r'],['lead','Líder']],
-  zona:[['name','Município'],['zona','Zona','r'],['n','Seções','r'],['a','Braide','r'],['pa','% Braide','r'],['b','Orleans','r'],['pb','% Orleans','r'],['diff','Diferença','r'],['br','Brancos','r'],['nu','Nulos','r'],['lead','Líder']]
+  sec:[['name','Município'],['zona','Zona','r'],['secao','Seção','r'],['local','Local de votação'],['a','Braide','r'],['b','Orleans','r'],['diff','Diferença','r'],['bn','Brancos · nulos','r'],['lead','Líder']],
+  zona:[['name','Município'],['zona','Zona','r'],['n','Seções','r'],['a','Braide','r'],['b','Orleans','r'],['diff','Diferença','r'],['bn','Brancos · nulos','r'],['lead','Líder']]
 };
-function sRow(o){const t=o.a+o.b;return {...o,name:sName(o.code),local:sLocName(o.i),t,pa:t?o.a/t*100:0,pb:t?o.b/t*100:0,diff:o.a-o.b,lead:o.a>o.b?'a':o.b>o.a?'b':'e'}}
+function sRow(o){const t=o.a+o.b;return {...o,bn:o.br+o.nu,name:sName(o.code),local:sLocName(o.i),t,pa:t?o.a/t*100:0,pb:t?o.b/t*100:0,diff:o.a-o.b,lead:o.a>o.b?'a':o.b>o.a?'b':'e'}}
 function sBase(){ /* filtros de municipio, zona e secao (aplicados as secoes) */
   const n=SS.sec===''?null:parseInt(SS.sec,10);
   const q=norm(SS.loc.trim());
@@ -64,7 +64,7 @@ function renderSecoes(){
   $('#sTbl thead').innerHTML='<tr>'+cols.map(c=>`<th data-k="${c[0]}" class="${c[2]||''} ${SS.sort===c[0]?'s':''}">${c[1]}<span class="ar">${SS.dir>0?'▲':'▼'}</span></th>`).join('')+'</tr>';
   const r=sRows(),pages=Math.max(1,Math.ceil(r.length/SS.per));SS.page=Math.min(SS.page,pages-1);
   const un=SS.group==='zona'?'zonas':'seções';
-  $('#sTbl tbody').innerHTML=r.length?r.slice(SS.page*SS.per,(SS.page+1)*SS.per).map(d=>`<tr data-c="${d.code}" data-i="${SS.group==='sec'?d.i:''}"><td class="cname"><b>${title(d.name)}</b></td><td class="r num" data-l="Zona">${parseInt(d.zona,10)}</td><td class="r num" data-l="${SS.group==='zona'?'Seções':'Seção'}">${SS.group==='zona'?fmt(d.n):d.secao}</td>${SS.group==='sec'?sLocTd(d):''}<td class="r num" data-l="Braide">${fmt(d.a)}</td><td class="r num" data-l="% Braide">${pp(d.pa)}%</td><td class="r num" data-l="Orleans">${fmt(d.b)}</td><td class="r num" data-l="% Orleans">${pp(d.pb)}%</td><td class="r num ${d.diff>0?'pos':d.diff<0?'neg':''}" data-l="Diferença">${d.diff>0?'+':d.diff<0?'−':''}${fmt(Math.abs(d.diff))}</td><td class="r num" data-l="Brancos">${fmt(d.br)}</td><td class="r num" data-l="Nulos">${fmt(d.nu)}</td><td class="clead">${d.lead==='e'?'<span class="tag">Empate</span>':`<span class="tag ${d.lead}">${NAME[d.lead]}</span>`}</td></tr>`).join(''):`<tr><td colspan="11" class="cempty"><div class="empty">${sEmptyMsg()}</div></td></tr>`;
+  $('#sTbl tbody').innerHTML=r.length?r.slice(SS.page*SS.per,(SS.page+1)*SS.per).map(d=>`<tr data-c="${d.code}" data-i="${SS.group==='sec'?d.i:''}"><td class="cname"><b>${title(d.name)}</b></td><td class="r num" data-l="Zona">${parseInt(d.zona,10)}</td><td class="r num" data-l="${SS.group==='zona'?'Seções':'Seção'}">${SS.group==='zona'?fmt(d.n):d.secao}</td>${SS.group==='sec'?sLocTd(d):''}<td class="r num" data-l="Braide"><b>${fmt(d.a)}</b><small>${pp(d.pa)}%</small></td><td class="r num" data-l="Orleans"><b>${fmt(d.b)}</b><small>${pp(d.pb)}%</small></td><td class="r num ${d.diff>0?'pos':d.diff<0?'neg':''}" data-l="Diferença">${d.diff>0?'+':d.diff<0?'−':''}${fmt(Math.abs(d.diff))}</td><td class="r num" data-l="Brancos · nulos"><b>${fmt(d.br+d.nu)}</b><small>${fmt(d.br)} · ${fmt(d.nu)}</small></td><td class="clead">${d.lead==='e'?'<span class="tag">Empate</span>':`<span class="tag ${d.lead}">${NAME[d.lead]}</span>`}</td></tr>`).join(''):`<tr><td colspan="9" class="cempty"><div class="empty">${sEmptyMsg()}</div></td></tr>`;
   $('#sCount').textContent=`${fmt(r.length)} ${un}`;
   $('#sPinfo').textContent=r.length?`Mostrando ${SS.page*SS.per+1}–${Math.min(r.length,(SS.page+1)*SS.per)} de ${fmt(r.length)}`:'';
   $('#sPbtn').innerHTML=`<button class="btn" id="spp" ${SS.page==0?'disabled':''}>← Anterior</button><span style="align-self:center">${SS.page+1} / ${pages}</span><button class="btn" id="spn" ${SS.page>=pages-1?'disabled':''}>Próxima →</button>`;
@@ -148,7 +148,7 @@ function sCargoRows(o){
       m.forEach(g=>{let tv=0,tn='';if(g.m)g.m.forEach((v,k)=>{if(v>tv){tv=v;tn=k}});g.top=tn;g.v=tv;g.m=null})}
     rows=[...m.values()];
   }
-  rows.forEach(r=>{r.name=sName(r.code);r.local=r.i===undefined?'':sLocName(r.i);r.pct=r.valid?r.v/r.valid*100:0;
+  rows.forEach(r=>{r.name=sName(r.code);r.local=r.i===undefined?'':sLocName(r.i);r.bn=r.br+r.nu;r.pct=r.valid?r.v/r.valid*100:0;
     if(!withC){const c=r.top?sCandOf(SS.cg,r.top):null;r.topName=c?c.nu:(r.top||'—');r.topP=party(c)}});
   const k=SS.sort,cmp=(x,y,f)=>{const u=x[f],v=y[f];return typeof u==='string'?u.localeCompare(v,'pt-BR'):(u||0)-(v||0)};
   rows.sort((x,y)=>(cmp(x,y,k)||cmp(x,y,'name')||cmp(x,y,'zona')||cmp(x,y,'secao'))*SS.dir);
@@ -157,8 +157,8 @@ function sCargoRows(o){
 function sCargoCols(){
   const z=SS.group==='zona',b=[['name','Município'],['zona','Zona','r'],z?['n','Seções','r']:['secao','Seção','r']].concat(z?[]:[['local','Local de votação']]);
   return b.concat(SS.cand
-    ?[['v','Votos','r'],['pct','% dos válidos','r'],['valid','Válidos','r'],['br','Brancos','r'],['nu','Nulos','r']]
-    :[['topName','Mais votado'],['topP','Partido'],['v','Votos','r'],['pct','% dos válidos','r'],['br','Brancos','r'],['nu','Nulos','r']]);
+    ?[['v','Votos','r'],['pct','% dos válidos','r'],['valid','Válidos','r'],['bn','Brancos · nulos','r']]
+    :[['topName','Mais votado'],['v','Votos','r'],['pct','% dos válidos','r'],['bn','Brancos · nulos','r']]);
 }
 function renderSecoesCargo(){
   const o=sCargoData(),cols=sCargoCols(),z=SS.group==='zona';
@@ -176,13 +176,11 @@ function renderSecoesCargo(){
       case 'secao':return `<td class="r num" data-l="Seção">${d.secao}</td>`;
       case 'local':return sLocTd(d);
       case 'n':return `<td class="r num" data-l="Seções">${fmt(d.n)}</td>`;
-      case 'topName':return `<td data-l="Mais votado"><b>${title(d.topName)}</b></td>`;
-      case 'topP':return `<td data-l="Partido">${d.topP}</td>`;
+      case 'topName':return `<td data-l="Mais votado" class="sloc"><b>${title(d.topName)}</b><small>${d.topP}</small></td>`;
       case 'v':return `<td class="r num" data-l="Votos">${fmt(d.v)}</td>`;
       case 'pct':return `<td class="r num" data-l="% dos válidos">${pp(d.pct)}%</td>`;
       case 'valid':return `<td class="r num" data-l="Válidos">${fmt(d.valid)}</td>`;
-      case 'br':return `<td class="r num" data-l="Brancos">${fmt(d.br)}</td>`;
-      default:return `<td class="r num" data-l="Nulos">${fmt(d.nu)}</td>`;
+      default:return `<td class="r num" data-l="Brancos · nulos"><b>${fmt(d.br+d.nu)}</b><small>${fmt(d.br)} · ${fmt(d.nu)}</small></td>`;
     }
   };
   $('#sTbl tbody').innerHTML=r.length?r.slice(SS.page*SS.per,(SS.page+1)*SS.per).map(d=>'<tr data-c="'+d.code+'" data-i="'+(z?'':d.i)+'">'+cols.map(c=>cell(d,c[0])).join('')+'</tr>').join(''):`<tr><td colspan="${cols.length}" class="cempty"><div class="empty">Nenhuma ${z?'zona':'seção'} encontrada.</div></td></tr>`;
