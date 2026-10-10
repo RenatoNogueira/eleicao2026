@@ -1,0 +1,38 @@
+<section class="view" id="v-pres">
+  <div class="toolbar">
+    <span id="presNote" style="font-size:13px;color:var(--tx2)"></span>
+  </div>
+
+  <div class="grid g4" id="presKpis"></div>
+
+  <div class="sec-title">Candidatos</div>
+  <div class="grid g3" id="presCands"></div>
+
+  <div class="sec-title">Maranhão × Brasil</div>
+  <div class="grid g2">
+    <div class="card"><h3>% dos votos válidos</h3><p class="sub">Como o Maranhão votou em relação ao país (6 maiores candidatos)</p><div class="ch tall"><canvas id="pChBr"></canvas></div></div>
+    <div class="card"><h3>Municípios vencidos</h3><p class="sub">Quantos dos 217 municípios cada candidato venceu</p><div class="ch tall"><canvas id="pChWon"></canvas></div></div>
+  </div>
+
+  <div class="sec-title">Como cada município votou</div>
+  <div class="toolbar">
+    <div class="seg" id="presMode"></div>
+    <span class="sp"></span>
+    <span id="presMapNote" style="font-size:13px;color:var(--tx2)"></span>
+  </div>
+  <div class="grid g-21">
+    <div class="card"><div class="mapbox" id="presMap"></div><div class="legend" id="presLegend"></div></div>
+    <div class="card"><h3 id="presListT">Maiores vantagens</h3><p class="sub" id="presListS"></p><ul class="rank" id="presList"></ul></div>
+  </div>
+
+  <div class="sec-title">Municípios</div>
+  <div class="toolbar">
+    <input class="input" id="presQ" placeholder="Filtrar por nome ou código…" style="min-width:240px">
+    <div class="chips" id="presLead"></div>
+    <span class="sp"></span>
+    <span id="presCount" style="font-size:13px;color:var(--tx2)"></span>
+    <button class="btn" id="presExp">⬇ Exportar CSV</button>
+  </div>
+  <div class="tbl-wrap"><table id="presTbl"><thead></thead><tbody></tbody></table></div>
+  <div class="pager"><span id="presPinfo"></span><div id="presPbtn"></div></div>
+</section>

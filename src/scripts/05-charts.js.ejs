@@ -38,5 +38,6 @@ function renderCharts(){
   mk('cConc',{type:'bar',data:{labels:N.map(n=>n===D.length?'Todos':'Top '+n),datasets:[{label:'% acumulado dos votos',data:N.map(n=>cum[n-1]/ST.t*100),borderRadius:8,backgroundColor:css('--a')+'bb'}]},
     options:baseOpts({plugins:{legend:{display:false},tooltip:{...baseOpts().plugins.tooltip,callbacks:{label:c=>` ${pc(c.raw)} dos votos`}}},scales:{x:{grid:{display:false},ticks:{color:css('--tx2')},border:{display:false}},y:{max:100,grid:{color:css('--line')},ticks:{color:css('--tx2'),callback:v=>v+'%'},border:{display:false}}}})});
   if($('#v-compare').classList.contains('on'))renderCompare();
+  if($('#v-pres').classList.contains('on'))renderPresCharts();
   if($('#v-deps').classList.contains('on'))renderDeps();
 }

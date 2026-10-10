@@ -64,3 +64,14 @@ npm run build          # gera public/data/locais.json (carregado em segundo plan
 ```
 
 Rode `dados:locais` sempre depois de `dados:secoes`: o build exige que os dois CSV tenham as mesmas seções, na mesma ordem.
+
+## Presidente
+
+A aba **Presidente** mostra o resultado de Presidente (1º turno) no Maranhão, comparado ao Brasil, e como cada
+município votou (mapa por líder ou por candidato, tabela e gaveta com o detalhe). Os dados ficam em
+`data/presidente.json`, gerado a partir dos arquivos públicos do TSE (eleição `6257`, cargo 1):
+
+```bash
+npm run dados:presidente   # baixa Brasil, Maranhão e os 217 municípios (~220 requisições)
+npm run build
+```

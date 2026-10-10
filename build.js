@@ -70,6 +70,7 @@ function build() {
     locaisJson = JSON.stringify({ locs, s: s2 });
     ver.locais = require('crypto').createHash('sha1').update(locaisJson).digest('hex').slice(0, 10);
   } else console.warn('Aviso: locais_votacao_por_secao.csv nao encontrado (rode npm run dados:locais); detalhes de local ficarao ausentes');
+  const presidenteJson = fs.readFileSync(path.join(ROOT, 'data', 'presidente.json'), 'utf8').trim();
   const secoesJson = JSON.stringify({ mun, rows: secRows, ver });
 
   const tpl = path.join(SRC, 'index.ejs');
@@ -86,7 +87,7 @@ function build() {
   fs.writeFileSync(path.join(PUBLIC_DIR, 'favicon.svg'), iconSvg, 'utf8');
   const iconUri = 'data:image/svg+xml;base64,' + Buffer.from(iconSvg).toString('base64');
   const dep = k => fs.readFileSync(path.join(ROOT, 'data', `legislativo_${k}.json`), 'utf8').trim();
-  const html = ejs.render(fs.readFileSync(tpl, 'utf8'), { data, mapJson, secoesJson, gaId, flagUri, iconUri, depFederal: dep('federal'), depEstadual: dep('estadual'), depSenador: dep('senador') }, { filename: tpl });
+  const html = ejs.render(fs.readFileSync(tpl, 'utf8'), { data, mapJson, secoesJson, presidenteJson, gaId, flagUri, iconUri, depFederal: dep('federal'), depEstadual: dep('estadual'), depSenador: dep('senador') }, { filename: tpl });
   fs.mkdirSync(PUBLIC_DIR, { recursive: true });
   fs.writeFileSync(path.join(PUBLIC_DIR, 'index.html'), html, 'utf8');
   if (locaisJson) { fs.mkdirSync(path.join(PUBLIC_DIR, 'data'), { recursive: true }); fs.writeFileSync(path.join(PUBLIC_DIR, 'data', 'locais.json'), locaisJson); }

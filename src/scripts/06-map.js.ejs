@@ -67,12 +67,12 @@ const tip=$('#tip');
 document.addEventListener('mousemove',e=>{
   const p=e.target.closest?.('.mapbox path');
   if(!p){tip.classList.remove('on');return}
-  const isDep=!!p.closest('#depMap'),d=byCode[p.dataset.c];
-  tip.innerHTML=isDep?depTipHTML(p.dataset.c):`<b>${title(d.name)}</b><span style="color:var(--a)">Braide ${pp(d.pa)}%</span> · <span style="color:var(--b)">Orleans ${pp(d.pb)}%</span><br><span style="color:var(--tx2)">${fmt(d.t)} votos válidos</span>`;
+  const isDep=!!p.closest('#depMap'),isPres=!!p.closest('#presMap'),d=byCode[p.dataset.c];
+  tip.innerHTML=isPres?presTipHTML(p.dataset.c):isDep?depTipHTML(p.dataset.c):`<b>${title(d.name)}</b><span style="color:var(--a)">Braide ${pp(d.pa)}%</span> · <span style="color:var(--b)">Orleans ${pp(d.pb)}%</span><br><span style="color:var(--tx2)">${fmt(d.t)} votos válidos</span>`;
   tip.classList.add('on');
   const w=tip.offsetWidth,h=tip.offsetHeight;
   tip.style.left=Math.min(innerWidth-w-10,e.clientX+14)+'px';tip.style.top=Math.min(innerHeight-h-10,e.clientY+14)+'px';
   if(p.closest('#mapFull'))mapInfo(d);
 });
-document.addEventListener('click',e=>{const p=e.target.closest?.('.mapbox path');if(!p)return;if(p.closest('#depMap'))depPickMun(p.dataset.c);else openDrawer(p.dataset.c)});
+document.addEventListener('click',e=>{const p=e.target.closest?.('.mapbox path');if(!p)return;if(p.closest('#presMap'))openPres(p.dataset.c);else if(p.closest('#depMap'))depPickMun(p.dataset.c);else openDrawer(p.dataset.c)});
 $('#mapMode').onclick=e=>{const b=e.target.closest('button');if(b){MODE=b.dataset.m;renderMap()}};

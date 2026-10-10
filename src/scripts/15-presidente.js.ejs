@@ -1,0 +1,156 @@
+/* ---------- presidente: Maranhao x Brasil e voto de cada municipio ---------- */
+const PRES=JSON.parse($('#presidente-data').textContent);
+const PRES_PAL=['#ef4444','#3b6cff','#f59e0b','#10b981','#a855f7','#06b6d4','#ec4899','#84cc16','#f97316','#6366f1','#14b8a6','#eab308'];
+const pEsc=t=>String(t==null?'':t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pCol=i=>PRES_PAL[i%PRES_PAL.length];
+const pName=c=>title(c.nu);
+const pMunName=code=>byCode[code]?title(byCode[code].name):code;
+PRES.munIdx=Object.fromEntries(PRES.mun.map((c,i)=>[c,i]));
+PRES.cands.forEach((c,i)=>{c.i=i});
+/* resumo por municipio: lider, vice-lider, margem (p.p.) */
+PRES.M=PRES.mun.map((code,mi)=>{
+  const vv=PRES.vv[mi],r=PRES.cands.map(c=>({i:c.i,v:PRES.mv[c.i][mi]})).sort((a,b)=>b.v-a.v);
+  const sh=v=>vv?v/vv*100:0;
+  return {code,mi,name:pMunName(code),vv,lead:r[0].i,pl:sh(r[0].v),second:r[1].i,ps:sh(r[1].v),margin:sh(r[0].v)-sh(r[1].v),a:PRES.mv[0][mi],b:PRES.mv[1][mi],pa:sh(PRES.mv[0][mi]),pb:sh(PRES.mv[1][mi])};
+});
+const PS={mode:'lead',q:'',lead:'all',sort:'name',dir:1,page:0,per:15};
+const pAvatar=(c,sz)=>`<span class="pav" style="--sz:${sz}px"><b>${pEsc(((c.nu.split(' ').filter(x=>x.length>2)[0]||c.nu)[0]||'')+((c.nu.split(' ').filter(x=>x.length>2)[1]||'')[0]||''))}</b><img loading="lazy" alt="" src="https://resultados.tse.jus.br/oficial/ele2026/${PRES.eleicao}/fotos/br/${c.id}.jpeg" onerror="this.remove()"></span>`;
+const pTag=c=>`<span class="pt"><i style="background:${pCol(c.i)}"></i>${pEsc(c.sg)}</span>`;
+const pWins=PRES.cands.map(c=>PRES.M.filter(m=>m.lead===c.i).length);
+
+function renderPres(){
+  const g=PRES.ma,b=PRES.br,top=PRES.cands[0];
+  $('#presNote').textContent=`Atualizado em ${PRES.atualizado} · ${PRES.turno}º turno · ${pc(g.apuradas/g.secoes*100,0)} das seções apuradas`;
+  const kp=[
+    ['a','Votos válidos',fmt(g.validos),`${pc(g.validos/g.comp*100,1)} dos comparecimentos`],
+    ['b','Comparecimento',pc(g.comp/g.aptos*100,2),`${fmt(g.comp)} de ${fmt(g.aptos)} eleitores`],
+    ['tx','Brancos · nulos',fmt(g.branco+g.nulo),`${fmt(g.branco)} brancos · ${fmt(g.nulo)} nulos`],
+    ['tx','Abstenção',pc(g.abst/g.aptos*100,2),`${fmt(g.abst)} eleitores`]
+  ];
+  $('#presKpis').innerHTML=kp.map(k=>`<div class="card kpi"><div class="lbl"><span class="dot" style="background:var(--${k[0]})"></span>${k[1]}</div><div class="val num">${k[2]}</div><div class="ft">${k[3]}</div></div>`).join('');
+  /* cards dos candidatos (os 6 maiores no MA) */
+  $('#presCands').innerHTML=PRES.cands.slice(0,6).map(c=>{const d=c.pc-c.pbr;return `<div class="card pcand" data-pc="${c.i}" style="cursor:pointer;border-top:3px solid ${pCol(c.i)}">
+    <div class="dcand">${pAvatar(c,56)}<div><h3 style="font-size:16px">${pEsc(pName(c))}</h3><p class="sub" style="margin:2px 0 0">Nº ${c.n} · ${pEsc(c.sg)} · vice ${pEsc(title(c.vice))}</p></div></div>
+    <div class="stat" style="margin:14px 0 8px"><div><small>Maranhão</small><b class="num">${pp(c.pc)}%</b><small style="display:block">${fmt(c.v)} votos</small></div><div><small>Brasil</small><b class="num">${pp(c.pbr)}%</b><small style="display:block">${fmt(c.vbr)} votos</small></div></div>
+    <p class="sub" style="margin:0">${d>=0?'+':'−'}${pp(Math.abs(d))} p.p. no Maranhão em relação ao país · vence em <b>${pWins[c.i]}</b> municípios${c.ebr||c.e?' · <b>vai ao 2º turno</b>':''}</p></div>`}).join('');
+  renderPresCharts();renderPresMap();renderPresTable();
+}
+
+function renderPresCharts(){
+  const O=baseOpts(),tx=css('--tx2'),ln=css('--line'),T=PRES.cands.slice(0,6);
+  mk('pChBr',{type:'bar',data:{labels:T.map(c=>pName(c)),datasets:[{label:'Maranhão',data:T.map(c=>c.pc),backgroundColor:css('--a'),borderRadius:6},{label:'Brasil',data:T.map(c=>c.pbr),backgroundColor:css('--tx3'),borderRadius:6}]},
+    options:{...O,plugins:{...O.plugins,tooltip:{...O.plugins.tooltip,callbacks:{label:x=>` ${x.dataset.label}: ${pp(x.raw)}%`}}},scales:{x:{grid:{display:false},ticks:{color:tx},border:{display:false}},y:{beginAtZero:true,grid:{color:ln},ticks:{color:tx,callback:v=>v+'%'},border:{display:false}}}}});
+  const W=PRES.cands.map(c=>c.i).filter(i=>pWins[i]>0);
+  mk('pChWon',{type:'bar',data:{labels:W.map(i=>pName(PRES.cands[i])),datasets:[{data:W.map(i=>pWins[i]),backgroundColor:W.map(i=>pCol(i)),borderRadius:8}]},
+    options:{...O,plugins:{legend:{display:false},tooltip:{...O.plugins.tooltip,callbacks:{label:x=>` ${x.raw} municípios`}}},scales:{x:{grid:{display:false},ticks:{color:tx},border:{display:false}},y:{beginAtZero:true,grid:{color:ln},ticks:{color:tx},border:{display:false}}}}});
+}
+
+/* ----- mapa ----- */
+function pFill(m){
+  if(PS.mode==='lead'){const k=Math.max(0,Math.min(1,(m.pl-30)/55));return `color-mix(in srgb,${pCol(m.lead)} ${Math.round(35+65*k)}%,var(--bg2))`}
+  const i=+PS.mode,v=PRES.mv[i][m.mi],sh=PRES.vv[m.mi]?v/PRES.vv[m.mi]*100:0,max=PS.max||1;
+  return `color-mix(in srgb,${pCol(i)} ${Math.round(8+92*Math.sqrt(sh/max))}%,var(--bg2))`;
+}
+function renderPresMap(){
+  const box=$('#presMap');
+  if(!$('#presMode').children.length){
+    $('#presMode').innerHTML='<button data-m="lead">Líder</button>'+PRES.cands.slice(0,4).map(c=>`<button data-m="${c.i}">${pEsc(pName(c).split(' ').slice(-1)[0])}</button>`).join('');
+  }
+  $$('#presMode button').forEach(b=>b.classList.toggle('on',b.dataset.m===String(PS.mode)));
+  if(!box.querySelector('svg')){
+    box.innerHTML=`<svg viewBox="${MAP.vb}" role="img" aria-label="Mapa de votos para presidente">${PRES.mun.map(code=>MAP.p[code]?`<path data-c="${code}" d="${MAP.p[code]}"></path>`:'').join('')}</svg>`;
+    attachZoom(box,false);
+  }
+  if(PS.mode!=='lead'){const i=+PS.mode;PS.max=Math.max(...PRES.M.map(m=>PRES.vv[m.mi]?PRES.mv[i][m.mi]/PRES.vv[m.mi]*100:0))}
+  $$('path',box).forEach(p=>{const m=PRES.M[PRES.munIdx[p.dataset.c]];if(m)p.style.fill=pFill(m)});
+  if(PS.mode==='lead'){
+    const used=PRES.cands.filter(c=>pWins[c.i]>0);
+    $('#presLegend').innerHTML=used.map(c=>`<span style="display:inline-flex;align-items:center;gap:6px"><i style="width:10px;height:10px;border-radius:3px;background:${pCol(c.i)}"></i>${pEsc(pName(c))} (${pWins[c.i]})</span>`).join('')+'<span style="color:var(--tx3);margin-left:6px">cor mais forte = maior % do líder</span>';
+    $('#presMapNote').textContent='Candidato mais votado em cada município';
+    const r=[...PRES.M].sort((a,b)=>b.margin-a.margin).slice(0,10);
+    $('#presListT').textContent='Maiores vantagens';$('#presListS').textContent='Diferença (p.p.) entre o 1º e o 2º colocado';
+    $('#presList').innerHTML=r.map((m,k)=>`<li data-pres="${m.code}"><span class="n">${String(k+1).padStart(2,'0')}</span><span><b>${pEsc(m.name)}</b> <span style="color:var(--tx3);font-size:12px">· ${pEsc(pName(PRES.cands[m.lead]))}</span></span><span class="tag mut">+${pp(m.margin)} p.p.</span></li>`).join('');
+  }else{
+    const c=PRES.cands[+PS.mode];
+    $('#presLegend').innerHTML=`<span>0</span><span class="grad" style="background:linear-gradient(90deg,color-mix(in srgb,${pCol(c.i)} 8%,var(--bg2)),${pCol(c.i)})"></span><span>${pp(PS.max)}%</span><span style="margin-left:6px;color:var(--tx3)">% dos votos válidos do município</span>`;
+    $('#presMapNote').textContent=`${pName(c)} · ${pp(c.pc)}% no estado`;
+    const r=PRES.M.map(m=>({m,v:PRES.mv[c.i][m.mi]})).sort((a,b)=>b.v-a.v).slice(0,10),mx=r[0].v||1;
+    $('#presListT').textContent='Municípios com mais votos';$('#presListS').textContent=`Votos de ${pName(c)}`;
+    $('#presList').innerHTML=r.map((x,k)=>`<li data-pres="${x.m.code}"><span class="n">${String(k+1).padStart(2,'0')}</span><span><b>${pEsc(x.m.name)}</b></span><span class="num">${fmt(x.v)} <small style="color:var(--tx3)">${pp(x.m.vv?x.v/x.m.vv*100:0)}%</small></span><span></span><div class="bg"><i style="width:${x.v/mx*100}%;background:${pCol(c.i)}"></i></div></li>`).join('');
+  }
+}
+function presTipHTML(code){
+  const m=PRES.M[PRES.munIdx[code]];if(!m)return '';
+  const t=[...PRES.cands].sort((a,b)=>PRES.mv[b.i][m.mi]-PRES.mv[a.i][m.mi]).slice(0,3);
+  return `<b>${pEsc(m.name)}</b>`+t.map(c=>`<span style="color:${pCol(c.i)}">${pEsc(pName(c))} ${pp(PRES.vv[m.mi]?PRES.mv[c.i][m.mi]/PRES.vv[m.mi]*100:0)}%</span>`).join('<br>')+`<br><span style="color:var(--tx2)">${fmt(m.vv)} votos válidos</span>`;
+}
+
+/* ----- tabela ----- */
+const pCols=()=>[['name','Município'],['lead','Líder'],['pl','% líder','r'],['pa',pName(PRES.cands[0]),'r'],['pb',pName(PRES.cands[1]),'r'],['margin','Vantagem','r'],['vv','Votos válidos','r']];
+function presFiltered(){
+  const q=norm(PS.q);
+  const r=PRES.M.filter(m=>(!q||norm(m.name).includes(q)||m.code.includes(q))&&(PS.lead==='all'||m.lead===+PS.lead));
+  const k=PS.sort;
+  r.sort((x,y)=>{const u=k==='lead'?pName(PRES.cands[x.lead]):x[k],v=k==='lead'?pName(PRES.cands[y.lead]):y[k];return (typeof u==='string'?u.localeCompare(v,'pt-BR'):u-v)*PS.dir});
+  return r;
+}
+function renderPresTable(){
+  const cols=pCols();
+  if(!$('#presLead').children.length){
+    $('#presLead').innerHTML='<button class="chip on" data-f="all">Todos</button>'+PRES.cands.filter(c=>pWins[c.i]>0).map(c=>`<button class="chip" data-f="${c.i}">${pEsc(pName(c).split(' ').slice(-1)[0])} (${pWins[c.i]})</button>`).join('');
+  }
+  $('#presTbl thead').innerHTML='<tr>'+cols.map(c=>`<th data-k="${c[0]}" class="${c[2]||''} ${PS.sort===c[0]?'s':''}">${pEsc(c[1])}<span class="ar">${PS.dir>0?'▲':'▼'}</span></th>`).join('')+'</tr>';
+  const r=presFiltered(),pages=Math.max(1,Math.ceil(r.length/PS.per));PS.page=Math.min(PS.page,pages-1);
+  $('#presTbl tbody').innerHTML=r.length?r.slice(PS.page*PS.per,(PS.page+1)*PS.per).map(m=>`<tr data-pres="${m.code}"><td class="cname"><b>${pEsc(m.name)}</b></td><td data-l="Líder">${pTag(PRES.cands[m.lead])} <b>${pEsc(pName(PRES.cands[m.lead]))}</b></td><td class="r num" data-l="% líder">${pp(m.pl)}%</td><td class="r num" data-l="${pEsc(pName(PRES.cands[0]))}"><b>${fmt(m.a)}</b><small style="display:block;color:var(--tx3)">${pp(m.pa)}%</small></td><td class="r num" data-l="${pEsc(pName(PRES.cands[1]))}"><b>${fmt(m.b)}</b><small style="display:block;color:var(--tx3)">${pp(m.pb)}%</small></td><td class="r num" data-l="Vantagem">+${pp(m.margin)} p.p.</td><td class="r num" data-l="Votos válidos">${fmt(m.vv)}</td></tr>`).join(''):'<tr><td colspan="7" class="cempty"><div class="empty">Nenhum município encontrado.</div></td></tr>';
+  $('#presCount').textContent=`${r.length} de ${PRES.M.length} municípios`;
+  $('#presPinfo').textContent=r.length?`Mostrando ${PS.page*PS.per+1}–${Math.min(r.length,(PS.page+1)*PS.per)} de ${r.length}`:'';
+  $('#presPbtn').innerHTML=`<button class="btn" id="ppp" ${PS.page==0?'disabled':''}>← Anterior</button><span style="align-self:center">${PS.page+1} / ${pages}</span><button class="btn" id="ppn" ${PS.page>=pages-1?'disabled':''}>Próxima →</button>`;
+}
+
+/* ----- gaveta do municipio ----- */
+function openPres(code){
+  const m=PRES.M[PRES.munIdx[code]];if(!m)return;
+  const mi=m.mi,vv=m.vv,g=PRES.ma,gb=PRES.br,ap=PRES.aptos[mi],cp=PRES.comp[mi];
+  const sorted=[...PRES.cands].sort((a,b)=>PRES.mv[b.i][mi]-PRES.mv[a.i][mi]);
+  const mx=Math.max(PRES.mv[sorted[0].i][mi],1);
+  const l=PRES.cands[m.lead],dl=m.pl-l.pc;
+  const stack=sorted.filter(c=>PRES.mv[c.i][mi]>0).map(c=>`<i style="width:${PRES.mv[c.i][mi]/vv*100}%;background:${pCol(c.i)}" title="${pEsc(pName(c))}"></i>`).join('');
+  const rows=sorted.map((c,k)=>{const v=PRES.mv[c.i][mi],sh=vv?v/vv*100:0,d=sh-c.pc;
+    return `<li><span class="n">${String(k+1).padStart(2,'0')}</span><span><b>${pEsc(pName(c))}</b> <span style="color:var(--tx3);font-size:12px">· ${pEsc(c.sg)}</span></span><span class="num">${fmt(v)} <small style="color:var(--tx3)">${pp(sh)}%</small></span><span></span><div class="bg"><i style="width:${v/mx*100}%;background:${pCol(c.i)}"></i></div></li>`}).join('');
+  const dif=PRES.cands.slice(0,4).map(c=>{const sh=vv?PRES.mv[c.i][mi]/vv*100:0;const d=sh-c.pc;return `<div class="row"><span>${pEsc(pName(c))}</span><b class="num" style="color:var(--${d>=0?'ok':'tx2'})">${pp(sh)}% <small style="color:var(--tx3);font-weight:500">${d>=0?'+':'−'}${pp(Math.abs(d))} p.p. vs MA · ${(sh-c.pbr)>=0?'+':'−'}${pp(Math.abs(sh-c.pbr))} vs BR</small></b></div>`}).join('');
+  $('#drawer').innerHTML=`<button class="icon-btn x" onclick="closeDrawer()" aria-label="Fechar">✕</button>
+   <span class="tag mut">Presidente · ${PRES.turno}º turno</span>
+   <h2 style="margin-top:12px">${pEsc(m.name)}</h2><p style="color:var(--tx2);font-size:13px">Código TSE ${m.code} · ${pEsc(pName(l))} lidera com ${pp(m.pl)}% (+${pp(m.margin)} p.p. sobre o 2º)</p>
+   <div class="bar" style="margin-top:16px;height:12px;display:flex">${stack}</div>
+   <div class="stat">
+     <div><small>Votos válidos</small><b class="num">${fmt(vv)}</b></div><div><small>Comparecimento</small><b class="num">${ap?pc(cp/ap*100,1):'—'}</b><small style="display:block">${fmt(cp)} de ${fmt(ap)}</small></div>
+     <div><small>Brancos</small><b class="num">${fmt(PRES.branco[mi])}</b></div><div><small>Nulos</small><b class="num">${fmt(PRES.nulo[mi])}</b></div>
+   </div>
+   <p class="sub" style="margin:0 0 6px;font-weight:700;color:var(--tx)">Votação por candidato</p>
+   <ul class="rank">${rows}</ul>
+   <p class="sub" style="margin:18px 0 6px;font-weight:700;color:var(--tx)">Comparação com o estado e o país</p>
+   <div class="card" style="box-shadow:none;background:var(--bg2);border:0;padding:6px 14px">${dif}</div>
+   <div style="display:flex;gap:8px;margin-top:18px;flex-wrap:wrap"><button class="btn pri" onclick="closeDrawer();openDrawer('${m.code}')">Ver governador</button><button class="btn" onclick="closeDrawer();showSecoes('${m.code}')">Zonas e seções</button></div>`;
+  $('#drawer').classList.add('on');$('#scrim').classList.add('on');$('#drawer').setAttribute('aria-hidden','false');
+}
+
+/* ----- eventos ----- */
+$('#presMode').onclick=e=>{const b=e.target.closest('button');if(b){PS.mode=b.dataset.m;renderPresMap()}};
+$('#presQ').oninput=e=>{PS.q=e.target.value;PS.page=0;renderPresTable()};
+$('#presLead').onclick=e=>{const b=e.target.closest('.chip');if(!b)return;PS.lead=b.dataset.f;PS.page=0;$$('#presLead .chip').forEach(c=>c.classList.toggle('on',c===b));renderPresTable()};
+$('#presTbl').onclick=e=>{
+  const th=e.target.closest('th');
+  if(th){const k=th.dataset.k;PS.dir=PS.sort===k?-PS.dir:(k==='name'||k==='lead'?1:-1);PS.sort=k;PS.page=0;renderPresTable();return}
+  const tr=e.target.closest('tbody tr');if(tr&&tr.dataset.pres)openPres(tr.dataset.pres);
+};
+$('#presPbtn').onclick=e=>{if(e.target.id==='ppp')PS.page--;if(e.target.id==='ppn')PS.page++;renderPresTable()};
+$('#v-pres').addEventListener('click',e=>{
+  const li=e.target.closest('li[data-pres]');if(li){openPres(li.dataset.pres);return}
+  const c=e.target.closest('.pcand');if(c){PS.mode=c.dataset.pc;renderPresMap();$('#presMap').scrollIntoView({behavior:'smooth',block:'center'})}
+});
+$('#presExp').onclick=()=>{
+  const r=presFiltered(),C=PRES.cands;
+  const h=['codigo','municipio','votos_validos','lider','pct_lider','vantagem_pp'].concat(C.map(c=>c.nu+' (votos)'),C.map(c=>c.nu+' (%)'));
+  const csv=[h.join(';'),...r.map(m=>[m.code,m.name,m.vv,C[m.lead].nu,m.pl.toFixed(2).replace('.',','),m.margin.toFixed(2).replace('.',',')].concat(C.map(c=>PRES.mv[c.i][m.mi]),C.map(c=>(m.vv?PRES.mv[c.i][m.mi]/m.vv*100:0).toFixed(2).replace('.',','))).join(';'))].join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv'}));a.download='presidente_municipios.csv';a.click();
+};
