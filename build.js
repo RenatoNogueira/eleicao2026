@@ -7,6 +7,7 @@ const ejs = require('ejs');
 const ROOT = __dirname;
 const SRC = path.join(ROOT, 'src');
 const CSV = path.join(ROOT, 'resultados_governador_por_municipio.csv');
+const CSV_SEC = path.join(ROOT, 'resultados_governador_por_secao.csv');
 const MAP = path.join(ROOT, 'data', 'mapa_ma.json');
 const PUBLIC_DIR = path.join(ROOT, 'public'); // pasta publicada no Vercel
 
@@ -38,6 +39,22 @@ function build() {
   const missing = data.filter(d => !JSON.parse(mapJson).p[d.c]).length;
   if (missing) console.warn(`Aviso: ${missing} municipios sem geometria no mapa`);
 
+  // Secoes (zona/secao): colunas codigo_municipio;municipio;zona;secao;braide;orleans;outros;brancos;nulos;total
+  const mun = [], munIdx = new Map();
+  const secRows = (fs.existsSync(CSV_SEC) ? readCsv(CSV_SEC) : []).map(r => {
+    if (!munIdx.has(r.codigo_municipio)) { munIdx.set(r.codigo_municipio, mun.length); mun.push(r.codigo_municipio); }
+    return [munIdx.get(r.codigo_municipio), r.zona, r.secao, +r.braide_votos, +r.orleans_votos, +r.outros_votos, +r.brancos, +r.nulos];
+  });
+  if (secRows.some(r => r.slice(3).some(Number.isNaN))) throw new Error('Linhas invalidas no CSV de secoes');
+  if (!secRows.length) console.warn('Aviso: resultados_governador_por_secao.csv nao encontrado; aba Zonas e secoes ficara vazia');
+  // hash do conteudo de cada data/secoes_<cargo>.json: vira ?v=<hash> na URL e evita cache velho apos atualizar os dados
+  const ver = {};
+  ['senador', 'federal', 'estadual'].forEach(k => {
+    const p = path.join(ROOT, 'data', `secoes_${k}.json`);
+    if (fs.existsSync(p)) ver[k] = require('crypto').createHash('sha1').update(fs.readFileSync(p)).digest('hex').slice(0, 10);
+  });
+  const secoesJson = JSON.stringify({ mun, rows: secRows, ver });
+
   const tpl = path.join(SRC, 'index.ejs');
   const flagSvg = fs.readFileSync(path.join(SRC, 'assets', 'bandeira-ma.svg'));
   const flagUri = 'data:image/svg+xml;base64,' + flagSvg.toString('base64');
@@ -52,10 +69,16 @@ function build() {
   fs.writeFileSync(path.join(PUBLIC_DIR, 'favicon.svg'), iconSvg, 'utf8');
   const iconUri = 'data:image/svg+xml;base64,' + Buffer.from(iconSvg).toString('base64');
   const dep = k => fs.readFileSync(path.join(ROOT, 'data', `legislativo_${k}.json`), 'utf8').trim();
-  const html = ejs.render(fs.readFileSync(tpl, 'utf8'), { data, mapJson, gaId, flagUri, iconUri, depFederal: dep('federal'), depEstadual: dep('estadual'), depSenador: dep('senador') }, { filename: tpl });
+  const html = ejs.render(fs.readFileSync(tpl, 'utf8'), { data, mapJson, secoesJson, gaId, flagUri, iconUri, depFederal: dep('federal'), depEstadual: dep('estadual'), depSenador: dep('senador') }, { filename: tpl });
   fs.mkdirSync(PUBLIC_DIR, { recursive: true });
   fs.writeFileSync(path.join(PUBLIC_DIR, 'index.html'), html, 'utf8');
-  console.log(`public/index.html gerado: ${(html.length / 1024).toFixed(1)} KB, ${data.length} municipios`);
+  // Votos por secao de Senador/Deputados (carregados sob demanda pela aba Zonas e secoes)
+  const dd = path.join(PUBLIC_DIR, 'data');
+  fs.mkdirSync(dd, { recursive: true });
+  const sec = ['senador', 'federal', 'estadual'].filter(k => fs.existsSync(path.join(ROOT, 'data', `secoes_${k}.json`)));
+  sec.forEach(k => fs.copyFileSync(path.join(ROOT, 'data', `secoes_${k}.json`), path.join(dd, `secoes_${k}.json`)));
+  if (sec.length < 3) console.warn('Aviso: faltam data/secoes_{senador,federal,estadual}.json (rode npm run dados:secoes)');
+  console.log(`public/index.html gerado: ${(html.length / 1024).toFixed(1)} KB, ${data.length} municipios, ${secRows.length} secoes`);
 }
 
 build();

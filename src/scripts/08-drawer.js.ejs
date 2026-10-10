@@ -14,7 +14,7 @@ function openDrawer(code){
      <div><small>Ranking de equilíbrio</small><b class="num">${ranks[d.code].marg}º <span style="font-size:12px;color:var(--tx3)">de ${D.length}</span></b></div>
    </div>
    <div class="card" style="box-shadow:none;background:var(--bg2);border:0"><h3>Versus média do estado</h3><p class="sub" style="margin-bottom:0">Braide ${d.pa>=ST.pa?'acima':'abaixo'} da média estadual (${pc(ST.pa)}) em <b>${pp(Math.abs(d.pa-ST.pa))} p.p.</b><br>Representa <b>${pc(d.t/ST.t*100,2)}</b> do total de votos.</p></div>
-   <div style="display:flex;gap:8px;margin-top:18px;flex-wrap:wrap"><button class="btn pri" onclick="toggleCmp('${d.code}',true)">${inCmp?'Remover da comparação':'+ Comparar'}</button><a class="btn" href="${d.src}" target="_blank" rel="noopener" style="text-decoration:none">Fonte TSE ↗</a></div>`;
+   <div style="display:flex;gap:8px;margin-top:18px;flex-wrap:wrap"><button class="btn pri" onclick="toggleCmp('${d.code}',true)">${inCmp?'Remover da comparação':'+ Comparar'}</button><button class="btn" onclick="showSecoes('${d.code}')">Zonas e seções</button><a class="btn" href="${d.src}" target="_blank" rel="noopener" style="text-decoration:none">Fonte TSE ↗</a></div>`;
   $('#drawer').classList.add('on');animateIn($('#drawer'),900);$('#scrim').classList.add('on');$('#drawer').setAttribute('aria-hidden','false');
 }
 function closeDrawer(){$('#drawer').classList.remove('on');$('#scrim').classList.remove('on');$('#drawer').setAttribute('aria-hidden','true')}
