@@ -34,6 +34,9 @@
 <!-- ANALYSIS -->
 <%- include('views/analysis') %>
 
+<!-- ZONAS E SECOES -->
+<%- include('views/secoes') %>
+
 <!-- DEPUTADOS -->
 <%- include('views/deputados') %>
 
@@ -42,6 +45,7 @@
 
 <%- include('partials/overlays') %>
 
+<script type="application/json" id="secoes-data"><%- secoesJson %></script>
 <script type="application/json" id="dep-federal"><%- depFederal %></script>
 <script type="application/json" id="dep-estadual"><%- depEstadual %></script>
 <script type="application/json" id="dep-senador"><%- depSenador %></script>
@@ -59,6 +63,7 @@
 <%- include('scripts/10-compare.js.ejs') %>
 <%- include('scripts/11-analysis.js.ejs') %>
 <%- include('scripts/12-deputados.js.ejs') %>
+<%- include('scripts/14-secoes.js.ejs') %>
 <%- include('scripts/13-init.js.ejs') %>
 </script>
 </body>

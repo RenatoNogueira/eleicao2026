@@ -1,0 +1,36 @@
+<section class="view" id="v-secoes">
+  <div class="toolbar">
+    <div class="seg" id="sCargo">
+      <button data-cg="gov" class="on">Governador</button>
+      <button data-cg="senador">Senador</button>
+      <button data-cg="federal"><span class="lg">Deputado</span><span class="sm">Dep.</span> Federal</button>
+      <button data-cg="estadual"><span class="lg">Deputado</span><span class="sm">Dep.</span> Estadual</button>
+    </div>
+  </div>
+  <div class="toolbar">
+    <select class="input" id="sMun"><option value="all">Todos os municípios</option></select>
+    <select class="input" id="sZona"><option value="all">Todas as zonas</option></select>
+    <input class="input" id="sSec" inputmode="numeric" placeholder="Nº da seção (ex.: 25)" style="width:170px" autocomplete="off">
+    <div class="gsearch" id="sCandBox" style="max-width:none;flex:1 1 240px;display:none">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="sCand" placeholder="Buscar candidato, número ou partido… (vazio = mais votado)" autocomplete="off"><div class="sugg" id="sCandSugg"></div>
+    </div>
+    <div class="chips" id="sLead">
+      <button class="chip on" data-f="all">Todos</button>
+      <button class="chip a" data-f="a">Braide</button>
+      <button class="chip b" data-f="b">Orleans</button>
+    </div>
+    <div class="seg" id="sGroup"><button data-g="sec" class="on">Por seção</button><button data-g="zona">Por zona</button></div>
+    <button class="btn" id="sClear">Limpar filtros</button>
+  </div>
+
+  <div class="grid g4" id="sKpis"></div>
+
+  <div class="toolbar" style="margin-top:18px">
+    <span id="sCount" style="font-size:13px;color:var(--tx2)"></span>
+    <span class="sp"></span>
+    <button class="btn" id="sExp">⬇ Exportar CSV</button>
+  </div>
+  <div class="tbl-wrap"><table id="sTbl"><thead></thead><tbody></tbody></table></div>
+  <div class="pager"><span id="sPinfo"></span><div id="sPbtn"></div></div>
+</section>
