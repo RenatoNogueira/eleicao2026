@@ -132,3 +132,9 @@ onde ele não existe, copia o link. O endereço de um município é `#municipios
 `src/assets/og-image.png` (1200×630) é a imagem que aparece ao colar o link no WhatsApp e nas redes; o build a copia para
 `public/og-image.png`. Para regerar: `powershell -ExecutionPolicy Bypass -File tools\gerar-og-image.ps1`. A meta tag usa o
 endereço absoluto do site: `SITE_URL` ou, no Vercel, `VERCEL_PROJECT_PRODUCTION_URL` (automática).
+
+## Versão publicada
+
+Cada build gera `public/version.json` (hash do conteúdo) e embute o mesmo id na página. O painel confere essa versão ao
+abrir, ao voltar para a aba e a cada 5 minutos; se houver uma nova, mostra "Há uma nova versão do painel" com o botão
+**Atualizar agora**. O `vercel.json` manda o navegador sempre revalidar a página e nunca guardar o `version.json`.

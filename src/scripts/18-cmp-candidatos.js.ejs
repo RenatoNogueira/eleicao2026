@@ -1,0 +1,161 @@
+/* ---------- Comparar: candidatos a senador e deputados (vantagens e quem levou mais votos) ---------- */
+const CMC={cg:'federal',ids:{federal:[0,1],estadual:[0,1],senador:[0,1]}};
+const CMC_NAME={senador:'Senador',federal:'Deputado Federal',estadual:'Deputado Estadual'};
+const cmcColor=i=>{const c=CC[i%CC.length];return c.startsWith('var(')?css(c.slice(4,-1)):c};
+
+/* dados do recorte: votos de cada candidato selecionado em cada municipio, vencedor e margem */
+function cmcData(){
+  const d=depLoad(CMC.cg),cs=CMC.ids[CMC.cg].map(i=>d.cands[i]).filter(Boolean);
+  const rows=d.mun.map((code,mi)=>{
+    const v=cs.map(c=>d.mv[c.i][mi]),tot=v.reduce((a,b)=>a+b,0);
+    let w=0;v.forEach((x,k)=>{if(x>v[w])w=k});
+    const s=[...v].sort((a,b)=>b-a);
+    return {code,mi,name:depMunName(code),v,tot,w,margin:s[0]-(s[1]||0),base:d.base[mi],share:tot?v[w]/tot*100:0};
+  });
+  return {d,cs,rows};
+}
+
+function cmcHtml(){
+  const seg=['senador','federal','estadual'].map(k=>`<button data-cc="${k}" class="${k===CMC.cg?'on':''}">${CMC_NAME[k]}</button>`).join('');
+  const d=depLoad(CMC.cg),ids=CMC.ids[CMC.cg];
+  const sels=ids.map(i=>`<span class="csel">${pEscC(title(d.cands[i].nu))} · ${pEscC(d.parties[d.cands[i].p].sg)}<button data-ccrm="${i}" aria-label="Remover">×</button></span>`).join('');
+  return `<div class="sec-title" style="margin-top:28px">Comparar candidatos</div>
+  <div class="card">
+    <h3>Vantagens entre candidatos</h3>
+    <p class="sub">Escolha de 2 a 4 candidatos do mesmo cargo para ver quem levou mais votos em cada município e onde está a vantagem.</p>
+    <div class="toolbar" style="margin-top:12px"><div class="seg" id="ccCargo">${seg}</div></div>
+    <div class="picker">
+      <div class="gsearch" style="max-width:320px;flex:none">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="ccSearch" placeholder="Adicionar candidato…" autocomplete="off"><div class="sugg" id="ccSugg"></div>
+      </div>
+      <div class="picker" id="ccSels">${sels}</div>
+      <span class="sp"></span>
+      <button class="btn" data-ccpre="duel">Duelo: 1º × 2º</button>
+      <button class="btn" data-ccpre="top">Top 4 votados</button>
+      <button class="btn" data-ccpre="party">Maiores de cada partido</button>
+    </div>
+  </div>
+  <div id="ccBody">${ids.length<2?'<div class="card empty" style="margin-top:16px">Selecione ao menos 2 candidatos para comparar.</div>':cmcBodyHtml()}</div>`;
+}
+const pEscC=t=>String(t==null?'':t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function cmcBodyHtml(){
+  const {d,cs,rows}=cmcData(),N=rows.length;
+  const wins=cs.map((_,k)=>rows.filter(r=>r.tot>0&&r.w===k).length);
+  const tot=cs.map(c=>c.v),sum=tot.reduce((a,b)=>a+b,0)||1;
+  const best=cs.map((_,k)=>rows.filter(r=>r.w===k).sort((a,b)=>b.margin-a.margin)[0]);
+  const rank=[...cs.keys()].sort((a,b)=>tot[b]-tot[a]);
+  const lead=rank[0],second=rank[1];
+  const gap=tot[lead]-tot[second];
+  const cards=cs.map((c,k)=>{
+    const b=best[k];
+    return `<div class="card ccard" style="border-top:3px solid ${cmcColor(k)}">
+      <div class="nm" style="border-left:4px solid ${cmcColor(k)};padding-left:10px">${pEscC(title(c.nu))}</div>
+      <p class="sub" style="margin:2px 0 10px 14px">${pEscC(d.parties[c.p].sg)} · Nº ${c.n} · ${c.rank}º do estado</p>
+      <div class="row"><span>Votos no estado</span><b class="num">${fmt(c.v)}</b></div>
+      <div class="row"><span>% dos válidos</span><b class="num">${pp(c.pc)}%</b></div>
+      <div class="row"><span>Parcela entre os comparados</span><b class="num">${pp(c.v/sum*100)}%</b></div>
+      <div class="row"><span>Vence entre os comparados em</span><b class="num">${wins[k]} de ${N} municípios</b></div>
+      <div class="row"><span>Maior vantagem</span><b>${b&&b.margin>0?pEscC(b.name)+' (+'+fmt(b.margin)+')':'—'}</b></div>
+    </div>`;
+  }).join('');
+  /* leitura: quem levou mais votos e onde esta a vantagem */
+  const L=cs[lead],S=cs[second];
+  const duelRows=rows.filter(r=>r.v[lead]>0||r.v[second]>0);
+  const wL=duelRows.filter(r=>r.v[lead]>r.v[second]),wS=duelRows.filter(r=>r.v[second]>r.v[lead]);
+  const bigL=[...wL].sort((a,b)=>(b.v[lead]-b.v[second])-(a.v[lead]-a.v[second]))[0];
+  const bigS=[...wS].sort((a,b)=>(b.v[second]-b.v[lead])-(a.v[second]-a.v[lead]))[0];
+  const tight=[...duelRows].filter(r=>r.v[lead]>0&&r.v[second]>0).sort((a,b)=>Math.abs(a.v[lead]-a.v[second])-Math.abs(b.v[lead]-b.v[second]))[0];
+  const top1=[...rows].sort((a,b)=>b.v[lead]-a.v[lead])[0];
+  const conc=L.v?top1.v[lead]/L.v*100:0;
+  const txt=`<b>${pEscC(title(L.nu))}</b> levou <b>${fmt(gap)}</b> votos a mais que <b>${pEscC(title(S.nu))}</b> no estado (${fmt(tot[lead])} × ${fmt(tot[second])}). `+
+    `${pEscC(title(L.nu))} vence entre os dois em <b>${wL.length}</b> municípios${bigL?`, com maior vantagem em <b>${pEscC(bigL.name)}</b> (+${fmt(bigL.v[lead]-bigL.v[second])})`:''}; `+
+    `${pEscC(title(S.nu))} vence em <b>${wS.length}</b>${bigS?`, com destaque para <b>${pEscC(bigS.name)}</b> (+${fmt(bigS.v[second]-bigS.v[lead])})`:''}. `+
+    `${tight?`A disputa mais apertada foi em <b>${pEscC(tight.name)}</b> (${fmt(tight.v[lead])} × ${fmt(tight.v[second])}${tight.v[lead]===tight.v[second]?', empate':''}). `:''}`+
+    `${top1?`${pEscC(title(L.nu))} concentra <b>${pp(conc)}%</b> dos seus votos em ${pEscC(top1.name)}.`:''}`;
+  return `<div class="grid cgrid" style="margin-top:16px">${cards}</div>
+    <div class="grid g2" style="margin-top:16px">
+      <div class="card"><h3>Votos nos maiores colégios</h3><p class="sub">Os 10 municípios com mais votos somados entre os comparados</p><div class="ch tall"><canvas id="ccA"></canvas></div></div>
+      <div class="card"><h3>Onde está a vantagem</h3><p class="sub">Maiores margens (votos) do vencedor entre os comparados, por município</p><div class="ch tall"><canvas id="ccB"></canvas></div></div>
+    </div>
+    <div class="grid g-21" style="margin-top:16px">
+      <div class="card"><h3>Mapa: quem levou mais votos</h3><p class="sub">Cor = candidato com mais votos entre os comparados · intensidade = parcela dos votos deles</p><div class="mapbox" id="ccMap"></div><div class="legend" id="ccLegend"></div></div>
+      <div class="card"><h3>Municípios vencidos</h3><p class="sub">Entre os comparados</p><div class="ch"><canvas id="ccC"></canvas></div></div>
+    </div>
+    <div class="card" style="margin-top:16px"><h3>Leitura da comparação</h3><p class="sub" style="margin:6px 0 0;font-size:13px">${txt}</p></div>`;
+}
+
+function cmcCharts(){
+  if(CMC.ids[CMC.cg].length<2||!$('#ccA'))return;
+  const {d,cs,rows}=cmcData(),O=baseOpts(),tx=css('--tx2'),ln=css('--line');
+  const names=cs.map(c=>title(c.nu));
+  /* A: votos nos 10 maiores colegios */
+  const topA=[...rows].sort((a,b)=>b.tot-a.tot).slice(0,10);
+  mk('ccA',{type:'bar',data:{labels:topA.map(r=>r.name),datasets:cs.map((c,k)=>({label:names[k],data:topA.map(r=>r.v[k]),backgroundColor:cmcColor(k),borderRadius:5}))},
+    options:{...O,plugins:{...O.plugins,tooltip:{...O.plugins.tooltip,callbacks:{label:x=>` ${x.dataset.label}: ${fmt(x.raw)} votos (${pp(topA[x.dataIndex].base?x.raw/topA[x.dataIndex].base*100:0)}% dos válidos)`}}},
+      scales:{x:{grid:{display:false},ticks:{color:tx,maxRotation:45,minRotation:0},border:{display:false}},y:{beginAtZero:true,grid:{color:ln},ticks:{color:tx},border:{display:false}}}}});
+  /* B: maiores margens do vencedor */
+  const topB=[...rows].filter(r=>r.margin>0).sort((a,b)=>b.margin-a.margin).slice(0,12);
+  mk('ccB',{type:'bar',data:{labels:topB.map(r=>r.name),datasets:[{data:topB.map(r=>r.margin),backgroundColor:topB.map(r=>cmcColor(r.w)),borderRadius:5}]},
+    options:{...O,indexAxis:'y',plugins:{legend:{display:false},tooltip:{...O.plugins.tooltip,callbacks:{
+      title:i=>topB[i[0].dataIndex].name,
+      label:x=>{const r=topB[x.dataIndex];return [` ${names[r.w]} vence por ${fmt(r.margin)} votos`,...cs.map((c,k)=>`  ${names[k]}: ${fmt(r.v[k])}`)]}}}},
+      scales:{x:{beginAtZero:true,grid:{color:ln},ticks:{color:tx},border:{display:false}},y:{grid:{display:false},ticks:{color:tx},border:{display:false}}}}});
+  /* C: municipios vencidos */
+  const wins=cs.map((_,k)=>rows.filter(r=>r.tot>0&&r.w===k).length);
+  mk('ccC',{type:'doughnut',data:{labels:names,datasets:[{data:wins,backgroundColor:cs.map((_,k)=>cmcColor(k)),borderWidth:0,spacing:3,borderRadius:6}]},
+    options:{...O,cutout:'62%',scales:{},plugins:{...O.plugins,tooltip:{...O.plugins.tooltip,callbacks:{label:x=>` ${x.label}: ${x.raw} municípios`}}}}});
+  /* D: mapa */
+  const box=$('#ccMap');
+  box.innerHTML=`<svg viewBox="${MAP.vb}" role="img" aria-label="Mapa de quem levou mais votos">${d.mun.map(code=>MAP.p[code]?`<path data-c="${code}" d="${MAP.p[code]}"></path>`:'').join('')}</svg>`;
+  attachZoom(box,false);
+  const idx=Object.fromEntries(rows.map(r=>[r.code,r]));
+  $$('path',box).forEach(p=>{
+    const r=idx[p.dataset.c];
+    p.style.fill=r&&r.tot>0?`color-mix(in srgb,${cmcColor(r.w)} ${Math.round(30+70*Math.min(1,Math.max(0,(r.share-35)/55)))}%,var(--bg2))`:'var(--bg2)';
+  });
+  $('#ccLegend').innerHTML=cs.map((c,k)=>`<span style="display:inline-flex;align-items:center;gap:6px"><i style="width:10px;height:10px;border-radius:3px;background:${cmcColor(k)}"></i>${pEscC(names[k])} (${wins[k]})</span>`).join('')+'<span style="color:var(--tx3);margin-left:6px">cinza = sem votos dos comparados</span>';
+}
+/* tooltip do mapa de comparacao (usado por 06-map) */
+function cmcTipHTML(code){
+  const {cs,rows}=cmcData(),r=rows.find(x=>x.code===code);if(!r)return '';
+  return `<b>${pEscC(r.name)}</b>`+cs.map((c,k)=>`<span style="color:${cmcColor(k)}">${pEscC(title(c.nu))} ${fmt(r.v[k])}${r.base?' ('+pp(r.v[k]/r.base*100)+'%)':''}</span>`).join('<br>')+`<br><span style="color:var(--tx2)">${fmt(r.base)} votos válidos</span>`;
+}
+
+/* ----- eventos (a lista e recriada a cada renderCompare) ----- */
+function cmcAdd(i){
+  const l=CMC.ids[CMC.cg];if(l.includes(i))return;
+  if(l.length>=4)l.shift();l.push(i);renderCompare();
+}
+function cmcBind(){
+  const inp=$('#ccSearch'),box=$('#ccSugg');if(!inp)return;
+  let hl=-1,items=[];
+  const draw=()=>{
+    const d=depLoad(CMC.cg),q=norm(inp.value.trim()),sel=CMC.ids[CMC.cg];
+    items=(q?d.cands.filter(c=>c.key.includes(q)):d.cands).filter(c=>!sel.includes(c.i)).slice(0,8);
+    box.innerHTML=items.length?items.map((c,k)=>`<button data-i="${c.i}" class="${k===hl?'hl':''}"><span>${pEscC(title(c.nu))} <small>Nº ${c.n}</small></span><span class="tag mut">${pEscC(d.parties[c.p].sg)} · ${fmt(c.v)}</span></button>`).join(''):'<div class="empty" style="padding:16px">Sem resultados</div>';
+    box.classList.add('on');
+  };
+  inp.addEventListener('input',()=>{hl=-1;draw()});
+  inp.addEventListener('focus',draw);
+  inp.addEventListener('keydown',e=>{
+    if(e.key==='ArrowDown'){hl=Math.min(items.length-1,hl+1);draw();e.preventDefault()}
+    else if(e.key==='ArrowUp'){hl=Math.max(0,hl-1);draw();e.preventDefault()}
+    else if(e.key==='Enter'&&items.length){cmcAdd(items[Math.max(0,hl)].i)}
+    else if(e.key==='Escape'){box.classList.remove('on');inp.blur()}
+  });
+  box.addEventListener('mousedown',e=>{const b=e.target.closest('button[data-i]');if(b){e.preventDefault();cmcAdd(+b.dataset.i)}});
+  inp.addEventListener('blur',()=>setTimeout(()=>box.classList.remove('on'),150));
+}
+$('#v-compare').addEventListener('click',e=>{
+  const cg=e.target.closest('#ccCargo button');if(cg){CMC.cg=cg.dataset.cc;renderCompare();return}
+  const rm=e.target.closest('[data-ccrm]');
+  if(rm){const l=CMC.ids[CMC.cg],k=l.indexOf(+rm.dataset.ccrm);if(k>=0)l.splice(k,1);renderCompare();return}
+  const pre=e.target.closest('[data-ccpre]');
+  if(pre){
+    const d=depLoad(CMC.cg),k=pre.dataset.ccpre;
+    CMC.ids[CMC.cg]=k==='duel'?[0,1]:k==='top'?[0,1,2,3]:d.order.slice(0,4).map(pi=>d.cands.find(c=>c.p===pi).i);
+    renderCompare();
+  }
+});

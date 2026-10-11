@@ -3,6 +3,7 @@ let CMP=[],CMPL='federal';
 const CMPL_NAME={senador:'Senador',federal:'Deputado Federal',estadual:'Deputado Estadual'};
 const CC=['var(--a)','var(--b)','#10b981','#a855f7'];
 function toggleCmp(c,fromDrawer){
+  if(!c||!byCode[c])return;
   if(CMP.includes(c))CMP=CMP.filter(x=>x!==c);else{if(CMP.length>=4)CMP.shift();CMP.push(c)}
   if(fromDrawer)closeDrawer();
   if(fromDrawer||!$('#v-compare').classList.contains('on'))go('compare');else renderCompare();
@@ -17,7 +18,7 @@ let cmpSig=null; // evita reanimar os cards quando so o tema muda
 function renderCompare(){
   $('#sels').innerHTML=CMP.map(c=>`<span class="sel">${title(byCode[c].name)}<button data-c="${c}" aria-label="Remover">×</button></span>`).join('');
   const body=$('#cmpBody');
-  if(CMP.length<1){body.innerHTML='<div class="card empty" style="margin-top:16px">Selecione municípios acima (ou use um atalho) para iniciar a comparação.</div>';Object.values(charts).forEach(()=>{});charts.cmp1?.destroy();charts.cmp2?.destroy();return}
+  if(CMP.length<1){body.innerHTML='<div class="card empty" style="margin-top:16px">Selecione municípios acima (ou use um atalho) para iniciar a comparação.</div>'+cmcHtml();charts.cmp1?.destroy();charts.cmp2?.destroy();cmcCharts();cmcBind();return}
   const ds=CMP.map(c=>byCode[c]);
   body.innerHTML=`<div class="grid cgrid" style="margin-top:16px" id="ccards">
     ${[...ds,{name:'MARANHÃO (ESTADO)',a:ST.a,b:ST.b,k:ST.k,ap:ST.ap,ab:ST.ab,pab:ST.pab,t:ST.t,pa:ST.pa,pb:ST.pb,pk:ST.pk,diff:ST.diff,lead:ST.diff>0?'a':'b',state:1}].map((d,i)=>`<div class="card ccard" ${d.state?'style="border-style:dashed"':''}>
@@ -36,9 +37,11 @@ function renderCompare(){
       <div class="card"><h3>Votos absolutos</h3><p class="sub">Braide × Orleans em cada município</p><div class="ch"><canvas id="cmp2"></canvas></div></div>
     </div>
     ${cmpLegisHtml(ds)}
+    ${cmcHtml()}
     ${ds.length>1?`<div class="card" style="margin-top:16px"><h3>Leitura rápida</h3><p class="sub" style="margin:6px 0 0;font-size:13px">${cmpText(ds)}</p></div>`:''}`;
   const sig=CMP.join(',');if(cmpSig!==sig){cmpSig=sig;animateIn($('#ccards'),1100)}
   cmpLegisCharts(ds);
+  cmcCharts();cmcBind();
   const A=css('--a'),B=css('--b'),L=ds.map(d=>title(d.name));
   mk('cmp1',{type:'bar',data:{labels:L,datasets:[{label:'% Braide',data:ds.map(d=>d.pa),backgroundColor:A,borderRadius:7},{label:'% Orleans',data:ds.map(d=>d.pb),backgroundColor:B,borderRadius:7},{label:'% Camarão',data:ds.map(d=>d.pk),backgroundColor:'#10b981',borderRadius:7},{type:'line',label:'Média do estado (Braide)',data:ds.map(()=>ST.pa),borderColor:css('--tx2'),borderDash:[6,5],pointRadius:0,borderWidth:2}]},
     options:baseOpts({scales:{x:{grid:{display:false},ticks:{color:css('--tx2')},border:{display:false}},y:{min:0,max:100,grid:{color:css('--line')},ticks:{color:css('--tx2'),callback:v=>v+'%'},border:{display:false}}}})});

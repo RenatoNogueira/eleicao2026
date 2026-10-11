@@ -114,9 +114,13 @@ function build() {
   fs.writeFileSync(path.join(PUBLIC_DIR, 'favicon.svg'), iconSvg, 'utf8');
   const iconUri = 'data:image/svg+xml;base64,' + Buffer.from(iconSvg).toString('base64');
   const dep = k => fs.readFileSync(path.join(ROOT, 'data', `legislativo_${k}.json`), 'utf8').trim();
-  const html = ejs.render(fs.readFileSync(tpl, 'utf8'), { data, mapJson, secoesJson, presidenteJson, apuracaoJson, siteUrl, gaId, flagUri, iconUri, depFederal: dep('federal'), depEstadual: dep('estadual'), depSenador: dep('senador') }, { filename: tpl });
+  let html = ejs.render(fs.readFileSync(tpl, 'utf8'), { buildId: '__BUILD_ID__', data, mapJson, secoesJson, presidenteJson, apuracaoJson, siteUrl, gaId, flagUri, iconUri, depFederal: dep('federal'), depEstadual: dep('estadual'), depSenador: dep('senador') }, { filename: tpl });
   fs.mkdirSync(PUBLIC_DIR, { recursive: true });
+  // id da versao: hash do conteudo da pagina (igual conteudo = mesmo id); o painel compara com public/version.json
+  const buildId = require('crypto').createHash('sha1').update(html).digest('hex').slice(0, 12);
+  html = html.split('__BUILD_ID__').join(buildId);
   fs.writeFileSync(path.join(PUBLIC_DIR, 'index.html'), html, 'utf8');
+  fs.writeFileSync(path.join(PUBLIC_DIR, 'version.json'), JSON.stringify({ id: buildId, geradoEm: new Date().toISOString() }), 'utf8');
   if (locaisJson) { fs.mkdirSync(path.join(PUBLIC_DIR, 'data'), { recursive: true }); fs.writeFileSync(path.join(PUBLIC_DIR, 'data', 'locais.json'), locaisJson); }
   // Votos por secao de Senador/Deputados (carregados sob demanda pela aba Zonas e secoes)
   const dd = path.join(PUBLIC_DIR, 'data');

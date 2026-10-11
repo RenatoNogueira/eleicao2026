@@ -390,3 +390,12 @@ html.no-scroll,html.no-scroll body{overflow:hidden}
 .toast.on{opacity:1;transform:translate(-50%,0)}
 .drawer .shr{position:absolute;top:18px;right:66px}
 @media(max-width:700px){.toast{bottom:calc(92px + env(safe-area-inset-bottom))}}
+
+/* etiqueta de candidato selecionado (comparar candidatos) */
+.csel{display:inline-flex;align-items:center;gap:8px;padding:6px 8px 6px 12px;border-radius:99px;font-size:13px;font-weight:600;border:1px solid var(--line);background:var(--card-solid)}
+.csel button{border:0;background:var(--bg2);width:20px;height:20px;border-radius:50%;line-height:1;color:var(--tx2)}
+
+/* aviso de nova versao */
+.update-bar{position:fixed;left:50%;top:14px;transform:translateX(-50%);z-index:90;display:flex;align-items:center;gap:12px;padding:10px 12px 10px 16px;border-radius:14px;background:var(--card-solid);border:1px solid var(--a);box-shadow:var(--shadow);font-size:13px;font-weight:600;max-width:calc(100vw - 24px)}
+.update-bar[hidden]{display:none}
+@media(max-width:700px){.update-bar{top:auto;bottom:calc(88px + env(safe-area-inset-bottom))}}

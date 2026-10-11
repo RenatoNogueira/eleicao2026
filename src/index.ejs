@@ -71,6 +71,7 @@
 <script type="application/json" id="dep-estadual"><%- depEstadual %></script>
 <script type="application/json" id="dep-senador"><%- depSenador %></script>
 <script>
+const BUILD_ID='<%= buildId %>';
 <%- include('scripts/00-raw-data.js.ejs') %>
 <%- include('scripts/01-data.js.ejs') %>
 <%- include('scripts/02-theme.js.ejs') %>
@@ -88,6 +89,8 @@
 <%- include('scripts/15-presidente.js.ejs') %>
 <%- include('scripts/16-apuracao.js.ejs') %>
 <%- include('scripts/17-share.js.ejs') %>
+<%- include('scripts/18-cmp-candidatos.js.ejs') %>
+<%- include('scripts/19-versao.js.ejs') %>
 <%- include('scripts/13-init.js.ejs') %>
 </script>
 </body>

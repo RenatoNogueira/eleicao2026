@@ -1,0 +1,22 @@
+/* ---------- versao: avisa (e oferece atualizar) quando ha uma nova versao publicada ---------- */
+(()=>{
+  if(typeof BUILD_ID==='undefined'||/^__/.test(BUILD_ID)||location.protocol==='file:')return;
+  const bar=$('#updateBar'),btn=$('#updateBtn');if(!bar||!btn)return;
+  let avisado=false,ultima=0;
+  const check=async()=>{
+    if(avisado||Date.now()-ultima<20000)return;
+    ultima=Date.now();
+    try{
+      const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});
+      if(!r.ok)return;
+      const j=await r.json();
+      if(j&&j.id&&j.id!==BUILD_ID){avisado=true;bar.hidden=false}
+    }catch(e){/* offline ou bloqueado: tenta de novo depois */}
+  };
+  btn.onclick=()=>{btn.disabled=true;btn.textContent='Atualizando…';location.reload()};
+  setTimeout(check,8000);
+  setInterval(check,5*60*1000);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)check()});
+  addEventListener('focus',check);
+  addEventListener('online',check);
+})();
