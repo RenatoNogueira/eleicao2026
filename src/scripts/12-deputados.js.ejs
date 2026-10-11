@@ -118,13 +118,16 @@ function renderDepMap(){
 function renderDepMun(){
   const d=depD(),code=DEPS.munSel;
   if(!code){$('#depMunCard').innerHTML='<h3>Passe o mouse ou clique no mapa</h3><p class="sub" style="margin:4px 0 0">Clique em um município para ver os candidatos mais votados nele.</p>';return}
-  const mi=d.munIdx[code],top=d.cands.map(c=>({c,v:d.mv[c.i][mi]})).sort((a,b)=>b.v-a.v).slice(0,6),mx=top[0].v||1,vv=d.vv[mi];
-  $('#depMunCard').innerHTML=`<h3 style="font-size:16px">${depMunName(code)}</h3><p class="sub">${fmt(vv)} votos válidos · mais votados</p>
-    <ul class="rank">${top.map((t,i)=>`<li data-i="${t.c.i}"><span class="n">${String(i+1).padStart(2,'0')}</span><span><b>${title(t.c.nu)}</b> <small style="color:var(--tx3)">${depD().parties[t.c.p].sg}</small></span><span class="num">${fmt(t.v)}</span><span></span><div class="bg"><i style="width:${t.v/mx*100}%;background:${depD().color[t.c.p]}"></i></div></li>`).join('')}</ul>`;
+  const mi=d.munIdx[code],top=d.cands.map(c=>({c,v:d.mv[c.i][mi]})).sort((a,b)=>b.v-a.v).slice(0,6),mx=top[0].v||1,vv=d.base[mi];
+  const sc=d.cands[DEPS.sel],sv=d.mv[sc.i][mi];
+  $('#depMunCard').innerHTML=`<h3 style="font-size:16px">${depMunName(code)}</h3><p class="sub">${fmt(vv)} votos válidos no município</p>
+    <div class="stat" style="margin:10px 0"><div style="grid-column:1/-1"><small>${title(sc.nu)} (candidato selecionado)</small><b class="num">${fmt(sv)}</b><small style="display:block">de ${fmt(vv)} votos válidos · ${pp(vv?sv/vv*100:0)}%</small></div></div>
+    <p class="sub" style="margin:0 0 6px">Mais votados</p>
+    <ul class="rank">${top.map((t,i)=>`<li data-i="${t.c.i}"><span class="n">${String(i+1).padStart(2,'0')}</span><span><b>${title(t.c.nu)}</b> <small style="color:var(--tx3)">${depD().parties[t.c.p].sg}</small></span><span class="num">${fmt(t.v)} <small style="color:var(--tx3);font-size:11.5px;font-weight:500">${pp(vv?t.v/vv*100:0)}%</small></span><span></span><div class="bg"><i style="width:${t.v/mx*100}%;background:${depD().color[t.c.p]}"></i></div></li>`).join('')}</ul>`;
 }
 function depTipHTML(code){
   const d=depD(),c=d.cands[DEPS.sel],mi=d.munIdx[code],v=d.mv[c.i][mi];
-  return `<b>${depMunName(code)}</b><span style="color:var(--a)">${title(c.nu)}</span><br>${fmt(v)} votos · ${pp(depShare(c,mi))}% dos válidos`;
+  return `<b>${depMunName(code)}</b><span style="color:var(--a)">${title(c.nu)}</span><br>${fmt(v)} votos de ${fmt(d.base[mi])} válidos · ${pp(depShare(c,mi))}%`;
 }
 function depPickMun(code){DEPS.munSel=code;renderDepMun()}
 
@@ -178,7 +181,7 @@ function openCand(i){
      <div><small>Posição geral</small><b class="num">${c.rank}º <span style="font-size:12px;color:var(--tx3)">de ${d.cands.length}</span></b></div>${d.qe===0?`<div><small>% dos comparecentes</small><b class="num">${pc(c.v/d.geral.comp*100,2)}</b></div>`:`<div><small>Posição no partido</small><b class="num">${c.prank}º <span style="font-size:12px;color:var(--tx3)">de ${pr.cands}</span></b></div>`}
    </div>
    <p class="sub" style="margin:0 0 6px;font-weight:700;color:var(--tx)">Municípios com mais votos</p>
-   <ul class="rank">${top.map((m,k)=>`<li data-mun="${m.code}" data-pick="${i}"><span class="n">${String(k+1).padStart(2,'0')}</span><span><b>${depMunName(m.code)}</b></span><span class="num">${fmt(m.v)}</span><span></span><div class="bg"><i style="width:${m.v/mx0*100}%;background:var(--a)"></i></div></li>`).join('')}</ul>
+   <ul class="rank">${top.map((m,k)=>`<li data-mun="${m.code}" data-pick="${i}"><span class="n">${String(k+1).padStart(2,'0')}</span><span><b>${depMunName(m.code)}</b></span><span class="num">${fmt(m.v)}<small style="display:block;color:var(--tx3);font-size:11.5px;font-weight:500">de ${fmt(d.base[m.mi])} válidos · ${pp(d.base[m.mi]?m.v/d.base[m.mi]*100:0)}%</small></span><span></span><div class="bg"><i style="width:${m.v/mx0*100}%;background:var(--a)"></i></div></li>`).join('')}</ul>
    <div style="display:flex;gap:8px;margin-top:18px;flex-wrap:wrap"><button class="btn pri" onclick="depToMap(${i})">Ver no mapa</button><button class="btn" onclick="depCmpFromDrawer(${i})">${inCmp?'Remover da comparação':'+ Comparar'}</button></div>`;
   $('#drawer').classList.add('on');animateIn($('#drawer'),900);$('#scrim').classList.add('on');$('#drawer').setAttribute('aria-hidden','false');
 }

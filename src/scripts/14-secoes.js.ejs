@@ -208,7 +208,7 @@ function renderSecoesCargo(){
   let kp;
   if(SS.cand){
     const c=sCandOf(SS.cg,SS.cand);
-    kp=[['tx','Seções',fmt(t.n),scope],['a',c?title(c.nu):SS.cand,fmt(t.v),(c?d_p(c)+' · ':'')+'votos no recorte'],['b','% dos válidos',pc(t.valid?t.v/t.valid*100:0,2),fmt(t.valid)+' votos válidos'],['tx','Brancos · nulos',fmt(t.br+t.nu),fmt(t.br)+' brancos · '+fmt(t.nu)+' nulos']];
+    kp=[['tx','Seções',fmt(t.n),scope],['a',c?title(c.nu):SS.cand,fmt(t.v),(c?d_p(c)+' · ':'')+'de '+fmt(t.valid)+' votos válidos'],['b','% dos válidos',pc(t.valid?t.v/t.valid*100:0,2),fmt(t.valid)+' votos válidos'],['tx','Brancos · nulos',fmt(t.br+t.nu),fmt(t.br)+' brancos · '+fmt(t.nu)+' nulos']];
   }else{
     const base=sBase(),mask=new Uint8Array(SEC.length);base.forEach(s=>mask[s.i]=1);
     let bn='',bv=0;for(const k in o.c){const a=o.c[k];let sum=0;for(let i=0;i<a.length;i+=2)if(mask[a[i]])sum+=a[i+1];if(sum>bv){bv=sum;bn=k}}

@@ -73,7 +73,7 @@ function renderPres(){
     const d=c.pc-c.pbr;
     const t1=PS.turn===2?PRES.T[1].cands.find(x=>x.n===c.n):null;
     const dv=t1?c.pc-t1.pc:null;
-    return pCard(c,pCol(c.i),`<div class="stat" style="margin:14px 0 8px"><div><small>Maranhão</small><b class="num">${pp(c.pc)}%</b><small style="display:block">${fmt(c.v)} votos</small></div><div><small>Brasil</small><b class="num">${pp(c.pbr)}%</b><small style="display:block">${fmt(c.vbr)} votos</small></div></div>
+    return pCard(c,pCol(c.i),`<div class="stat" style="margin:14px 0 8px"><div><small>Maranhão</small><b class="num">${pp(c.pc)}%</b><small style="display:block">${fmt(c.v)} de ${fmt(PRES.ma.validos)} votos válidos</small></div><div><small>Brasil</small><b class="num">${pp(c.pbr)}%</b><small style="display:block">${fmt(c.vbr)} de ${fmt(PRES.br.validos)} votos válidos</small></div></div>
     <p class="sub" style="margin:0">${d>=0?'+':'−'}${pp(Math.abs(d))} p.p. no Maranhão em relação ao país · vence em <b>${pWins[c.i]}</b> municípios${t1?` · ${dv>=0?'+':'−'}${pp(Math.abs(dv))} p.p. sobre o 1º turno`:''}${PS.turn===1&&(c.ebr||c.e)?' · <b>vai ao 2º turno</b>':''}${PS.turn===2&&c.e?' · <b>eleito</b>':''}</p>`,`data-pc="${c.i}"`)}).join('');
   renderPresCharts();renderPresMap();renderPresTable();
 }
@@ -129,13 +129,13 @@ function renderPresMap(){
     $('#presMapNote').textContent=`${pName(c)} · ${pp(c.pc)}% no estado`;
     const r=PRES.M.map(m=>({m,v:PRES.mv[c.i][m.mi]})).sort((a,b)=>b.v-a.v).slice(0,10),mx=r[0].v||1;
     $('#presListT').textContent='Municípios com mais votos';$('#presListS').textContent=`Votos de ${pName(c)}`;
-    $('#presList').innerHTML=r.map((x,k)=>`<li data-pres="${x.m.code}"><span class="n">${String(k+1).padStart(2,'0')}</span><span><b>${pEsc(x.m.name)}</b></span><span class="num">${fmt(x.v)} <small style="color:var(--tx3)">${pp(x.m.vv?x.v/x.m.vv*100:0)}%</small></span><span></span><div class="bg"><i style="width:${x.v/mx*100}%;background:${pCol(c.i)}"></i></div></li>`).join('');
+    $('#presList').innerHTML=r.map((x,k)=>`<li data-pres="${x.m.code}"><span class="n">${String(k+1).padStart(2,'0')}</span><span><b>${pEsc(x.m.name)}</b></span><span class="num">${fmt(x.v)}<small style="display:block;color:var(--tx3);font-size:11.5px;font-weight:500">de ${fmt(x.m.vv)} válidos · ${pp(x.m.vv?x.v/x.m.vv*100:0)}%</small></span><span></span><div class="bg"><i style="width:${x.v/mx*100}%;background:${pCol(c.i)}"></i></div></li>`).join('');
   }
 }
 function presTipHTML(code){
   const m=PRES.M?PRES.M[PRES.munIdx[code]]:null;if(!m||PRES.pend)return `<b>${pEsc(pMunName(code))}</b>`;
   const t=[...PRES.cands].sort((a,b)=>PRES.mv[b.i][m.mi]-PRES.mv[a.i][m.mi]).slice(0,3);
-  return `<b>${pEsc(m.name)}</b>`+t.map(c=>`<span style="color:${pCol(c.i)}">${pEsc(pName(c))} ${pp(PRES.vv[m.mi]?PRES.mv[c.i][m.mi]/PRES.vv[m.mi]*100:0)}%</span>`).join('<br>')+`<br><span style="color:var(--tx2)">${fmt(m.vv)} votos válidos</span>`+(m.changed?'<br><span style="color:var(--b)">mudou de líder vs. 1º turno</span>':'');
+  return `<b>${pEsc(m.name)}</b>`+t.map(c=>`<span style="color:${pCol(c.i)}">${pEsc(pName(c))} ${fmt(PRES.mv[c.i][m.mi])} de ${fmt(PRES.vv[m.mi])} (${pp(PRES.vv[m.mi]?PRES.mv[c.i][m.mi]/PRES.vv[m.mi]*100:0)}%)</span>`).join('<br>')+`<br><span style="color:var(--tx2)">${fmt(m.vv)} votos válidos</span>`+(m.changed?'<br><span style="color:var(--b)">mudou de líder vs. 1º turno</span>':'');
 }
 
 /* ----- tabela ----- */
@@ -177,7 +177,7 @@ function openPres(code){
   const stack=sorted.filter(c=>PRES.mv[c.i][mi]>0).map(c=>`<i style="width:${PRES.mv[c.i][mi]/vv*100}%;background:${pCol(c.i)}" title="${pEsc(pName(c))}"></i>`).join('');
   const rows=sorted.map((c,k)=>{const v=PRES.mv[c.i][mi],sh=vv?v/vv*100:0;
     const pv=PS.turn===2?pPrevShare(c.n,mi):null,dv=pv===null?'':` <small style="color:var(--tx3)">· 1º t. ${pp(pv)}% (${sh-pv>=0?'+':'−'}${pp(Math.abs(sh-pv))})</small>`;
-    return `<li><span class="n">${String(k+1).padStart(2,'0')}</span><span><b>${pEsc(pName(c))}</b> <span style="color:var(--tx3);font-size:12px">· ${pEsc(c.sg)}</span>${dv}</span><span class="num">${fmt(v)} <small style="color:var(--tx3)">${pp(sh)}%</small></span><span></span><div class="bg"><i style="width:${v/mx*100}%;background:${pCol(c.i)}"></i></div></li>`}).join('');
+    return `<li><span class="n">${String(k+1).padStart(2,'0')}</span><span><b>${pEsc(pName(c))}</b> <span style="color:var(--tx3);font-size:12px">· ${pEsc(c.sg)}</span>${dv}</span><span class="num">${fmt(v)}<small style="display:block;color:var(--tx3);font-size:11.5px;font-weight:500">de ${fmt(vv)} válidos · ${pp(sh)}%</small></span><span></span><div class="bg"><i style="width:${v/mx*100}%;background:${pCol(c.i)}"></i></div></li>`}).join('');
   const dif=PRES.cands.slice(0,4).map(c=>{const sh=vv?PRES.mv[c.i][mi]/vv*100:0;const d=sh-c.pc;return `<div class="row"><span>${pEsc(pName(c))}</span><b class="num">${pp(sh)}% <small style="color:var(--tx3);font-weight:500">${d>=0?'+':'−'}${pp(Math.abs(d))} p.p. vs MA · ${(sh-c.pbr)>=0?'+':'−'}${pp(Math.abs(sh-c.pbr))} vs BR</small></b></div>`}).join('');
   let prev='';
   if(PS.turn===2){
