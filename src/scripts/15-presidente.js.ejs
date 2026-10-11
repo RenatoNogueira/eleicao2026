@@ -191,6 +191,7 @@ function openPres(code){
    <div class="stat">
      <div><small>Votos válidos</small><b class="num">${fmt(vv)}</b></div><div><small>Comparecimento</small><b class="num">${ap?pc(cp/ap*100,1):'—'}</b><small style="display:block">${fmt(cp)} de ${fmt(ap)}</small></div>
      <div><small>Brancos</small><b class="num">${fmt(PRES.branco[mi])}</b></div><div><small>Nulos</small><b class="num">${fmt(PRES.nulo[mi])}</b></div>
+     <div><small>Eleitorado apto</small><b class="num">${fmt(ap)}</b></div><div><small>Abstenção</small><b class="num">${fmt(Math.max(0,ap-cp))}</b><small style="display:block">${ap?pc((ap-cp)/ap*100,1):'—'} do eleitorado</small></div>
    </div>
    <p class="sub" style="margin:0 0 6px;font-weight:700;color:var(--tx)">Votação por candidato</p>
    <ul class="rank">${rows}</ul>

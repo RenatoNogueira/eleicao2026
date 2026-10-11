@@ -12,6 +12,8 @@ function openDrawer(code){
      <div><small>Diferença</small><b class="num ${d.diff>0?'pos':'neg'}"><span data-to="${Math.abs(d.diff)}" data-kind="int" data-pre="${d.diff>0?'+':'−'}">${d.diff>0?'+':'−'}${fmt(Math.abs(d.diff))}</span></b></div><div><small>Votos válidos</small><b class="num" data-to="${d.t}" data-kind="int">${fmt(d.t)}</b></div>
      <div><small>Felipe Camarão (PT)</small><b class="num">${fmt(d.k)}</b><small style="display:block">${pc(d.pk,2)}</small></div><div><small>Outros e sub judice</small><b class="num">${fmt(d.o)}</b><small style="display:block">${pc(d.o/d.t*100,2)}</small></div>
      <div><small>Brancos</small><b class="num">${fmt(d.br)}</b></div><div><small>Nulos</small><b class="num">${fmt(d.nu)}</b></div>
+     <div><small>Eleitorado apto</small><b class="num">${fmt(d.ap)}</b></div><div><small>Comparecimento</small><b class="num">${fmt(d.cp)}</b><small style="display:block">${pc(d.ap?d.cp/d.ap*100:0,1)}</small></div>
+     <div><small>Abstenção</small><b class="num">${fmt(d.ab)}</b><small style="display:block">${pc(d.pab,1)} do eleitorado</small></div>
      <div><small>Ranking por porte</small><b class="num">${ranks[d.code].size}º <span style="font-size:12px;color:var(--tx3)">de ${D.length}</span></b></div>
      <div><small>Ranking de equilíbrio</small><b class="num">${ranks[d.code].marg}º <span style="font-size:12px;color:var(--tx3)">de ${D.length}</span></b></div>
    </div>

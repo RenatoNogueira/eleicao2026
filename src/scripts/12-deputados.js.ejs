@@ -37,7 +37,7 @@ function renderDeps(){
   const maj=d.qe===0; // eleicao majoritaria (senador): sem quociente nem voto de legenda
   const kp=[
     ['a','Vagas em disputa',d.vagas,'int',maj?`${d.cands.length} candidatos · cada eleitor vota em até 2`:`${d.cands.length} candidatos · quociente eleitoral ${fmt(d.qe)}`],
-    ['b','Comparecimento',compPct,'pct2',`${fmt(g.comp)} de ${fmt(g.aptos)} eleitores`],
+    ['b','Comparecimento',compPct,'pct2',`${fmt(g.comp)} de ${fmt(g.aptos)} eleitores · abstenção ${fmt(g.abst)} (${pc(g.abst/g.aptos*100,2)})`],
     ['a','Votos nominais',g.nom,'int',maj?'soma dos votos (até 2 por eleitor)':`${pc(g.nom/g.validos*100)} dos votos válidos`],
     maj?['b','Brancos e nulos',g.branco+g.nulo,'int',`${fmt(g.branco)} brancos · ${fmt(g.nulo)} nulos`]:['b','Votos de legenda',g.leg,'int',`${pc(g.leg/g.validos*100)} dos votos válidos`]];
   $('#depKpis').innerHTML=kp.map(k=>`<div class="card kpi"><div class="lbl"><span class="dot" style="background:var(--${k[0]})"></span>${k[1]}</div><div class="val num" data-to="${k[2]}" data-kind="${k[3]}">${countFmt[k[3]](k[2])}</div><div class="ft">${k[4]}</div></div>`).join('');

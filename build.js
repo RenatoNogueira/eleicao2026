@@ -37,6 +37,9 @@ function build() {
     sj: parseInt(r.anulados_sub_judice, 10) || 0, // anulados sub judice (contam na base do TSE)
     br: parseInt(r.brancos, 10) || 0,
     nu: parseInt(r.nulos, 10) || 0,
+    ap: parseInt(r.eleitores_aptos, 10) || 0,     // eleitorado apto
+    cp: parseInt(r.comparecimento, 10) || 0,
+    ab: parseInt(r.abstencao, 10) || 0,
     v: parseInt(r.validos_tse, 10) || 0,          // base dos percentuais do TSE (validos + sub judice)
   }));
   const bad = data.filter(d => !d.c || Number.isNaN(d.a) || Number.isNaN(d.b));
@@ -85,7 +88,11 @@ function build() {
     apuracaoJson = JSON.stringify(a);
   } else console.warn('Aviso: data/apuracao.json nao encontrado (rode npm run dados:apuracao); o grafico de apuracao ficara oculto');
   const presidenteJson = fs.readFileSync(path.join(ROOT, 'data', 'presidente.json'), 'utf8').trim();
-  const secoesJson = JSON.stringify({ mun, rows: secRows, ver });
+  // abstencao oficial por zona (TSE): { "codMun|zona": [eleitores aptos, abstencao] }
+  const zab = {};
+  const ZON = path.join(ROOT, 'resultados_governador_por_zona.csv');
+  if (fs.existsSync(ZON)) readCsv(ZON).forEach(z => { zab[z.codigo_municipio + '|' + z.zona] = [parseInt(z.eleitores_aptos, 10) || 0, parseInt(z.abstencao, 10) || 0]; });
+  const secoesJson = JSON.stringify({ mun, rows: secRows, ver, zab });
 
   const tpl = path.join(SRC, 'index.ejs');
   const flagSvg = fs.readFileSync(path.join(SRC, 'assets', 'bandeira-ma.svg'));

@@ -10,6 +10,12 @@ function renderOverview(){
    ['a','Municípios de Braide',ST.wa,`${pc(ST.wa/D.length*100)} dos municípios`],
    ['b','Municípios de Orleans',ST.wb,`${pc(ST.wb/D.length*100)} dos municípios`]];
   $('#kpis').innerHTML=kp.map(k=>`<div class="card kpi"><div class="lbl"><span class="dot" style="background:var(--${k[0]})"></span>${k[1]}</div><div class="val num" data-to="${k[2]}" data-kind="int">${fmt(k[2])}</div><div class="ft">${k[3]}</div></div>`).join('');
+  const kp2=[
+   ['tx','Eleitorado apto',ST.ap,'eleitores do Maranhão'],
+   ['a','Comparecimento',ST.cp,`${pc(ST.ap?ST.cp/ST.ap*100:0,2)} do eleitorado`],
+   ['b','Abstenção',ST.ab,`${pc(ST.pab,2)} do eleitorado não compareceu`],
+   ['tx','Brancos · nulos',ST.br+ST.nu,`${fmt(ST.br)} brancos · ${fmt(ST.nu)} nulos`]];
+  $('#kpis2').innerHTML=kp2.map(k=>`<div class="card kpi"><div class="lbl"><span class="dot" style="background:var(--${k[0]})"></span>${k[1]}</div><div class="val num" data-to="${k[2]}" data-kind="${k[4]||'int'}">${k[4]==='pct2'?pc(k[2],2):fmt(k[2])}</div><div class="ft">${k[3]}</div></div>`).join('');
   const li=(arr,key)=>arr.map((d,i)=>{const m=Math.abs(d.diff),mx=Math.abs(arr[0].diff);return `<li data-c="${d.code}"><span class="n">${String(i+1).padStart(2,'0')}</span><span><b>${title(d.name)}</b></span><span class="num ${key==='a'?'pos':'neg'}">+${fmt(m)}</span><span></span><div class="bg"><i style="width:${m/mx*100}%;background:var(--${key})"></i></div></li>`}).join('');
   $('#topA').innerHTML=li([...D].sort((x,y)=>y.diff-x.diff).slice(0,10),'a');
   $('#topB').innerHTML=li([...D].sort((x,y)=>x.diff-y.diff).slice(0,10),'b');

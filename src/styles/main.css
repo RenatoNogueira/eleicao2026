@@ -375,3 +375,12 @@ html.no-scroll,html.no-scroll body{overflow:hidden}
 .bar i.k,.mini i.k{background:#10b981}
 /* tabela de municipios: celulas compactas para caber sem rolagem horizontal em 1024px */
 @media(min-width:701px){#tbl th{padding:12px 9px}#tbl td{padding:10px 9px}#tbl .mini{width:90px}}
+
+/* 5 cards de KPI (zonas e secoes) */
+.g5{grid-template-columns:repeat(5,1fr)}
+@media(max-width:1000px){.g5{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:700px){.g5{grid-template-columns:1fr 1fr;gap:10px}}
+
+/* busca global: titulos de grupo e subtitulo do candidato */
+.sugg .sg{padding:8px 14px 4px;font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3)}
+.sugg button small{display:block;color:var(--tx3);font-size:11.5px;font-weight:500}

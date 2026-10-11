@@ -108,3 +108,11 @@ Os percentuais seguem a base do TSE: votos do candidato / votos válidos computa
 Nos municípios, `vc` (em `data/legislativo_*.json`) guarda essa base; por seção, a base é nominais + legenda
 (`lg` em `data/secoes_*.json`). Em 23 municípios da Câmara Federal o TSE publica um total 2 a 3 votos menor que a
 soma dos candidatos (votos de candidatos "anulado sub judice"); a diferença total é de 76 votos (0,002%).
+
+### Abstenção
+
+O painel mostra eleitorado apto, comparecimento e abstenção. Os valores oficiais vêm do TSE (arquivos por município e por
+zona): `resultados_governador_por_municipio.csv` (colunas `eleitores_aptos`, `comparecimento`, `abstencao`) e
+`resultados_governador_por_zona.csv`, ambos gerados por `npm run dados:governador`. Em Zonas e seções, recortes de estado,
+município ou zona usam o valor oficial; recortes de seção (ou com filtro de líder) são **estimados** pelo cadastro de locais
+de votação, porque o boletim de urna só informa o comparecimento (o cadastro difere ~0,1% do eleitorado da eleição).

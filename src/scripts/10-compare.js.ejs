@@ -20,7 +20,7 @@ function renderCompare(){
   if(CMP.length<1){body.innerHTML='<div class="card empty" style="margin-top:16px">Selecione municípios acima (ou use um atalho) para iniciar a comparação.</div>';Object.values(charts).forEach(()=>{});charts.cmp1?.destroy();charts.cmp2?.destroy();return}
   const ds=CMP.map(c=>byCode[c]);
   body.innerHTML=`<div class="grid cgrid" style="margin-top:16px" id="ccards">
-    ${[...ds,{name:'MARANHÃO (ESTADO)',a:ST.a,b:ST.b,k:ST.k,t:ST.t,pa:ST.pa,pb:ST.pb,pk:ST.pk,diff:ST.diff,lead:ST.diff>0?'a':'b',state:1}].map((d,i)=>`<div class="card ccard" ${d.state?'style="border-style:dashed"':''}>
+    ${[...ds,{name:'MARANHÃO (ESTADO)',a:ST.a,b:ST.b,k:ST.k,ap:ST.ap,ab:ST.ab,pab:ST.pab,t:ST.t,pa:ST.pa,pb:ST.pb,pk:ST.pk,diff:ST.diff,lead:ST.diff>0?'a':'b',state:1}].map((d,i)=>`<div class="card ccard" ${d.state?'style="border-style:dashed"':''}>
       <div class="nm" style="${d.state?'':`border-left:4px solid ${CC[i]};padding-left:10px`}">${title(d.name)}</div>
       <div class="bar" style="margin:12px 0;height:10px"><i class="a" style="width:${d.pa}%" data-w="${d.pa}"></i><i class="b" style="width:${d.pb}%" data-w="${d.pb}"></i><i class="k" style="width:${d.pk}%" data-w="${d.pk}"></i></div>
       <div class="row"><span>Braide</span><b class="num"><span data-to="${d.pa}" data-kind="pct1">${pp(d.pa)}%</span> · <span data-to="${d.a}" data-kind="int">${fmt(d.a)}</span></b></div>
@@ -28,6 +28,7 @@ function renderCompare(){
       <div class="row"><span>Felipe Camarão</span><b class="num"><span data-to="${d.pk}" data-kind="pct1">${pp(d.pk)}%</span> · <span data-to="${d.k}" data-kind="int">${fmt(d.k)}</span></b></div>
       <div class="row"><span>Diferença</span><b class="num ${d.diff>0?'pos':'neg'}"><span data-to="${Math.abs(d.diff)}" data-kind="int" data-pre="${d.diff>0?'+':'−'}">${d.diff>0?'+':'−'}${fmt(Math.abs(d.diff))}</span></b></div>
       <div class="row"><span>Votos válidos</span><b class="num" data-to="${d.t}" data-kind="int">${fmt(d.t)}</b></div>
+      <div class="row"><span>Abstenção</span><b class="num">${fmt(d.ab)} · ${pp(d.pab)}%</b></div>
       ${d.state?`<div class="row"><span>Municípios</span><b><span data-to="${ST.wa}" data-kind="int">${ST.wa}</span> × <span data-to="${ST.wb}" data-kind="int">${ST.wb}</span></b></div>`:`<div class="row"><span>% do estado</span><b class="num" data-to="${d.t/ST.t*100}" data-kind="pct2">${pc(d.t/ST.t*100,2)}</b></div>`}
     </div>`).join('')}</div>
     <div class="grid g2" style="margin-top:16px">

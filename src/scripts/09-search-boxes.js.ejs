@@ -10,6 +10,48 @@ function bindSearch(inp,box,onPick){
   inp.addEventListener('blur',()=>setTimeout(()=>box.classList.remove('on'),120));
   function pick(c){inp.value='';box.classList.remove('on');onPick(c)}
 }
-bindSearch($('#gs'),$('#sugg'),c=>openDrawer(c));
+/* busca global: municipios + candidatos a deputado federal, deputado estadual e senador */
+function bindGlobalSearch(inp,box){
+  const CG=[['federal','Dep. Federal'],['estadual','Dep. Estadual'],['senador','Senador']];
+  let hl=-1,items=[];
+  const find=q=>{
+    const m=D.filter(d=>norm(d.name).includes(q)||d.code.includes(q)).sort((x,y)=>(norm(x.name).startsWith(q)?0:1)-(norm(y.name).startsWith(q)?0:1)||y.t-x.t).slice(0,4).map(d=>({t:'m',d}));
+    const c=[];
+    if(q.length>=2)CG.forEach(([cg,lb])=>{const d=depLoad(cg);d.cands.forEach(x=>{if(x.key.includes(q))c.push({t:'c',cg,lb,x,d,s:(norm(x.nu).startsWith(q)||String(x.n)===q?0:1)})})});
+    c.sort((a,b)=>a.s-b.s||b.x.v-a.x.v);
+    return m.concat(c.slice(0,10));
+  };
+  const draw=()=>{
+    const q=norm(inp.value.trim());
+    if(!q){box.classList.remove('on');return}
+    items=find(q);
+    let h='',last='';
+    items.forEach((it,i)=>{
+      const g=it.t==='m'?'Municípios':'Candidatos';
+      if(g!==last){h+=`<div class="sg">${g}</div>`;last=g}
+      if(it.t==='m')h+=`<button data-i="${i}" class="${i===hl?'hl':''}"><span>${title(it.d.name)}</span><span class="tag ${it.d.lead}">${NAME[it.d.lead]} ${pp(Math.max(it.d.pa,it.d.pb))}%</span></button>`;
+      else h+=`<button data-i="${i}" class="${i===hl?'hl':''}"><span>${title(it.x.nu)} <small>${it.lb} · Nº ${it.x.n}</small></span><span class="tag mut">${it.d.parties[it.x.p].sg} · ${fmt(it.x.v)}</span></button>`;
+    });
+    box.innerHTML=h||'<div class="empty" style="padding:16px">Sem resultados</div>';
+    box.classList.add('on');
+  };
+  const pick=i=>{
+    const it=items[i];if(!it)return;
+    inp.value='';box.classList.remove('on');
+    if(it.t==='m')openDrawer(it.d.code);
+    else{DEPS.cg=it.cg;openCand(it.x.i)}
+  };
+  inp.addEventListener('input',()=>{hl=-1;draw()});
+  inp.addEventListener('focus',()=>{if(inp.value.trim())draw()});
+  inp.addEventListener('keydown',e=>{
+    if(e.key==='ArrowDown'){hl=Math.min(items.length-1,hl+1);draw();e.preventDefault()}
+    else if(e.key==='ArrowUp'){hl=Math.max(0,hl-1);draw();e.preventDefault()}
+    else if(e.key==='Enter'&&items.length){pick(Math.max(0,hl))}
+    else if(e.key==='Escape'){box.classList.remove('on');inp.blur()}
+  });
+  box.addEventListener('mousedown',e=>{const b=e.target.closest('button[data-i]');if(b){e.preventDefault();pick(+b.dataset.i)}});
+  inp.addEventListener('blur',()=>setTimeout(()=>box.classList.remove('on'),150));
+}
+bindGlobalSearch($('#gs'),$('#sugg'));
 bindSearch($('#cs'),$('#csugg'),c=>toggleCmp(c));
 document.addEventListener('keydown',e=>{if(e.key==='/'&&!/INPUT|SELECT/.test(document.activeElement.tagName)){e.preventDefault();$('#gs').focus()}if(e.key==='Escape')closeDrawer()});

@@ -30,7 +30,7 @@ function renderMap(){
   mapInfo(null);
 }
 function mapInfo(d){
-  $('#mapInfo').innerHTML=d?`<span class="tag ${d.lead}">Lidera: ${NAME[d.lead]}</span><h3 style="font-size:18px;margin:8px 0 10px">${title(d.name)}</h3><div class="bar" style="margin:0 0 8px;height:10px"><i class="a" style="width:${d.pa}%"></i><i class="b" style="width:${d.pb}%"></i><i class="k" style="width:${d.pk}%"></i></div><div style="display:flex;justify-content:space-between;font-size:13px;font-weight:700"><span style="color:var(--a)">${pp(d.pa)}% · ${fmt(d.a)}</span><span style="color:var(--b)">${pp(d.pb)}% · ${fmt(d.b)}</span></div><p class="sub" style="margin:10px 0 0">Felipe Camarão ${pp(d.pk)}% · ${fmt(d.t)} votos válidos · diferença ${fmt(Math.abs(d.diff))}</p>`
+  $('#mapInfo').innerHTML=d?`<span class="tag ${d.lead}">Lidera: ${NAME[d.lead]}</span><h3 style="font-size:18px;margin:8px 0 10px">${title(d.name)}</h3><div class="bar" style="margin:0 0 8px;height:10px"><i class="a" style="width:${d.pa}%"></i><i class="b" style="width:${d.pb}%"></i><i class="k" style="width:${d.pk}%"></i></div><div style="display:flex;justify-content:space-between;font-size:13px;font-weight:700"><span style="color:var(--a)">${pp(d.pa)}% · ${fmt(d.a)}</span><span style="color:var(--b)">${pp(d.pb)}% · ${fmt(d.b)}</span></div><p class="sub" style="margin:10px 0 0">Felipe Camarão ${pp(d.pk)}% · ${fmt(d.t)} votos válidos · diferença ${fmt(Math.abs(d.diff))} · abstenção ${fmt(d.ab)} (${pp(d.pab)}%)</p>`
    :`<h3>Passe o mouse no mapa</h3><p class="sub" style="margin:4px 0 0">Veja os números de cada município aqui. Clique para abrir os detalhes completos.</p>`;
 }
 /* zoom & pan (viewBox based) */
@@ -68,7 +68,7 @@ document.addEventListener('mousemove',e=>{
   const p=e.target.closest?.('.mapbox path');
   if(!p){tip.classList.remove('on');return}
   const isDep=!!p.closest('#depMap'),isPres=!!p.closest('#presMap'),d=byCode[p.dataset.c];
-  tip.innerHTML=isPres?presTipHTML(p.dataset.c):isDep?depTipHTML(p.dataset.c):`<b>${title(d.name)}</b><span style="color:var(--a)">Braide ${pp(d.pa)}%</span> · <span style="color:var(--b)">Orleans ${pp(d.pb)}%</span> · <span style="color:#10b981">Camarão ${pp(d.pk)}%</span><br><span style="color:var(--tx2)">${fmt(d.t)} votos válidos</span>`;
+  tip.innerHTML=isPres?presTipHTML(p.dataset.c):isDep?depTipHTML(p.dataset.c):`<b>${title(d.name)}</b><span style="color:var(--a)">Braide ${pp(d.pa)}%</span> · <span style="color:var(--b)">Orleans ${pp(d.pb)}%</span> · <span style="color:#10b981">Camarão ${pp(d.pk)}%</span><br><span style="color:var(--tx2)">${fmt(d.t)} votos válidos · abstenção ${pp(d.pab)}%</span>`;
   tip.classList.add('on');
   const w=tip.offsetWidth,h=tip.offsetHeight;
   tip.style.left=Math.min(innerWidth-w-10,e.clientX+14)+'px';tip.style.top=Math.min(innerHeight-h-10,e.clientY+14)+'px';

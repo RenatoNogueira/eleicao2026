@@ -6,7 +6,7 @@ const LOC={st:'load'};
 fetch('data/locais.json'+(SECJ.ver&&SECJ.ver.locais?'?v='+SECJ.ver.locais:'')).then(r=>{if(!r.ok)throw new Error(r.status);return r.json()}).then(j=>{
   if(j.s.length!==SEC.length)throw new Error('locais divergentes');
   LOC.l=j.locs;LOC.s=j.s;LOC.k=new Array(SEC.length);LOC.st='ok';
-}).catch(()=>{LOC.st='err'}).then(()=>{if($('#v-secoes').classList.contains('on'))renderSecoes()});
+}).catch(()=>{LOC.st='err'}).then(()=>renderSecoes());
 function sLocOf(i){
   if(LOC.st!=='ok'||i===undefined)return null;
   const s=LOC.s[i],l=LOC.l[s[0]];
@@ -52,6 +52,19 @@ function sEmptyMsg(){
   }
   return `Nenhuma ${un} encontrada para os filtros aplicados. <button class="btn" onclick="$('#sClear').click()">Limpar filtros</button>`;
 }
+/* abstencao do recorte: eleitorado apto (secao + agregadas) menos o comparecimento da secao */
+function sAbst(rows){
+  /* recorte de estado, municipio ou zona (sem filtro de secao/lider): valor oficial do TSE por zona */
+  if(SS.sec===''&&SS.lead==='all'&&SECJ.zab){
+    let ap=0,ab=0;new Set(sBase().map(s=>s.code+'|'+s.zona)).forEach(k=>{const z=SECJ.zab[k];if(z){ap+=z[0];ab+=z[1]}});
+    if(ap)return {n:ab,p:ab/ap*100,est:false};
+  }
+  if(LOC.st!=='ok')return null;
+  const z=SS.group==='zona',set=new Set(rows.map(x=>z?x.code+'|'+x.zona:x.i));
+  let ap=0,vot=0;
+  sBase().forEach(s=>{if(set.has(z?s.code+'|'+s.zona:s.i)){const l=LOC.s[s.i];ap+=l[1]+l[4];vot+=s.a+s.b+s.k+s.o+s.br+s.nu}});
+  return ap?{n:Math.max(0,ap-vot),p:Math.max(0,ap-vot)/ap*100,est:true}:null;
+}
 function sFillZonas(){
   const zs=new Set();(SS.mun==='all'?SEC:SEC.filter(s=>s.code===SS.mun)).forEach(s=>zs.add(s.zona));
   const l=[...zs].sort();if(SS.zona!=='all'&&!zs.has(SS.zona))SS.zona='all';
@@ -78,6 +91,7 @@ function renderSecoes(){
     ['b','Orleans',fmt(tot.b),pc(pb,2)+' dos votos válidos'],
     [df>=0?'a':'b','Diferença',`${df>0?'+':df<0?'−':''}${fmt(Math.abs(df))}`,`${fmt(tot.br)} brancos · ${fmt(tot.nu)} nulos`]
   ];
+  const ab=sAbst(r);if(ab)kp.push(['tx','Abstenção'+(ab.est?' (estimada)':''),fmt(ab.n),pc(ab.p,2)+' do eleitorado'+(ab.est?' · pelo cadastro de locais':'')]);
   $('#sKpis').innerHTML=kp.map(k=>`<div class="card kpi"><div class="lbl"><span class="dot" style="background:var(--${k[0]})"></span>${k[1]}</div><div class="val num">${k[2]}</div><div class="ft">${k[3]}</div></div>`).join('');
 }
 function sSync(){
@@ -201,6 +215,7 @@ function renderSecoesCargo(){
     const c=bn?sCandOf(SS.cg,bn):null;
     kp=[['tx','Seções',fmt(base.length),scope],['b','Votos válidos',fmt(base.reduce((s,x)=>s+o.vtot[x.i],0)),'votos nominais'],['a','Mais votado',c?title(c.nu):'—',c?(d_p(c)+' · '+fmt(bv)+' votos'):''],['tx','Brancos · nulos',fmt(base.reduce((s,x)=>s+o.br[x.i]+o.nu[x.i],0)),'no recorte']];
   }
+  const ab2=sAbst(r);if(ab2)kp.push(['tx','Abstenção'+(ab2.est?' (estimada)':''),fmt(ab2.n),pc(ab2.p,2)+' do eleitorado'+(ab2.est?' · pelo cadastro de locais':'')]);
   $('#sKpis').innerHTML=kp.map(k=>`<div class="card kpi"><div class="lbl"><span class="dot" style="background:var(--${k[0]})"></span>${k[1]}</div><div class="val num" style="font-size:${k[2].length>12?'20px':''}">${k[2]}</div><div class="ft">${k[3]}</div></div>`).join('');
 }
 const d_p=c=>depLoad(SS.cg).parties[c.p].sg;
