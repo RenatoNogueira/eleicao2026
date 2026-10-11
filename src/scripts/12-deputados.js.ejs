@@ -10,6 +10,8 @@ function depLoad(cg){
     d.order=d.parties.map((p,i)=>i).sort((a,b)=>d.parties[b].tot-d.parties[a].tot);
     d.color={};d.order.forEach((pi,r)=>d.color[pi]=r<DEP_PAL.length?DEP_PAL[r]:DEP_GRAY);
     d.munIdx=Object.fromEntries(d.mun.map((c,i)=>[c,i]));
+    /* base dos percentuais do TSE: validos + anulados sub judice (vvc) */
+    d.base=d.mun.map((_,i)=>(d.vc&&d.vc[i])||d.vv[i]);d.baseSt=d.geral.vvc||d.geral.validos;
     d.cands.forEach((c,i)=>{c.i=i;c.rank=i+1;c.key=norm(c.nu+' '+c.nm+' '+c.n+' '+d.parties[c.p].sg+' '+d.parties[c.p].fed)});
     const seen={};d.cands.forEach(c=>{seen[c.p]=(seen[c.p]||0)+1;c.prank=seen[c.p]});
     DEPS.cache[cg]=d;
@@ -24,7 +26,7 @@ const depParty=c=>{const d=depD();return `<span class="pt"><i style="background:
 const depStatus=c=>c.e?(depD().qe===0?'Eleito':/m[ée]dia/i.test(c.st)?'Eleito (média)':'Eleito (QP)'):c.dv&&c.dv!=='Válido'?'Anulado':c.st==='Suplente'?'Suplente':'Não eleito';
 const depTag=c=>`<span class="tag ${c.e?'ok':'mut'}">${depStatus(c)}</span>`;
 const depMunName=code=>byCode[code]?title(byCode[code].name):code;
-const depShare=(c,mi)=>{const d=depD();return d.vv[mi]?d.mv[c.i][mi]/d.vv[mi]*100:0};
+const depShare=(c,mi)=>{const d=depD();return d.base[mi]?d.mv[c.i][mi]/d.base[mi]*100:0};
 
 /* ----- render principal ----- */
 function renderDeps(){
@@ -62,7 +64,7 @@ function renderDepCharts(){
   const top=d.order.slice(0,12),O=baseOpts();
   $('#depVotesSub').textContent=d.qe===0?'Votos dos candidatos de cada partido (até 12 maiores)':'Votos nominais + votos de legenda (12 maiores)';
   mk('dChVotes',{type:'bar',data:{labels:top.map(i=>d.parties[i].sg),datasets:[{data:top.map(i=>d.parties[i].tot),backgroundColor:top.map(i=>d.color[i]),borderRadius:6}]},
-    options:{...O,indexAxis:'y',plugins:{legend:{display:false},tooltip:{...O.plugins.tooltip,callbacks:{label:c=>{const p=d.parties[top[c.dataIndex]];return [` ${fmt(p.tot)} votos (${pc(p.tot/d.geral.validos*100)})`,` ${fmt(p.nom)} nominais · ${fmt(p.leg)} de legenda`]}}}},
+    options:{...O,indexAxis:'y',plugins:{legend:{display:false},tooltip:{...O.plugins.tooltip,callbacks:{label:c=>{const p=d.parties[top[c.dataIndex]];return [` ${fmt(p.tot)} votos (${pc(p.tot/d.baseSt*100)})`,` ${fmt(p.nom)} nominais · ${fmt(p.leg)} de legenda`]}}}},
       scales:{x:{grid:{color:ln},ticks:{color:tx,callback:v=>v>=1e6?(v/1e6)+' mi':v>=1e3?(v/1e3)+' mil':v},border:{display:false}},y:{grid:{display:false},ticks:{color:tx},border:{display:false}}}}});
   const seats=d.order.filter(i=>d.parties[i].eleitos>0).sort((a,b)=>d.parties[b].eleitos-d.parties[a].eleitos||d.parties[b].tot-d.parties[a].tot);
   $('#depSeatsSub').textContent=`${d.vagas} cadeiras distribuídas entre ${seats.length} partidos`;

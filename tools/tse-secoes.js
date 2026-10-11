@@ -17,7 +17,7 @@ const N_ORLEANS = process.env.ORLEANS || '15';
 const N_CAMARAO = process.env.CAMARAO || '13';
 const OUT = path.join(ROOT, 'resultados_governador_por_secao.csv');
 const CSV_MUN = path.join(ROOT, 'resultados_governador_por_municipio.csv');
-const CACHE = process.env.CACHE || path.join(require('os').tmpdir(), `tse-secoes-v2-${UF}.jsonl`); // retomada de execucoes interrompidas
+const CACHE = process.env.CACHE || path.join(require('os').tmpdir(), `tse-secoes-v3-${UF}.jsonl`); // retomada de execucoes interrompidas
 const HOST = 'https://resultados.tse.jus.br/oficial';
 
 async function fetchRetry(url, kind, tries = 4) {
@@ -72,12 +72,13 @@ function parseBu(file) {
       const cg = x.ch.find(c => !c.cons && isCtx(c, 1));
       const list = x.ch.find(c => c.cons && c.ch.length && c.ch.every(k => k.cons && k.ch.some(g => isCtx(g, 2))));
       if (cg && list && CARGOS[int(bu, cg)]) {
-        const r = res[int(bu, cg)] = { cand: {}, branco: 0, nulo: 0 };
+        const r = res[int(bu, cg)] = { cand: {}, branco: 0, nulo: 0, leg: 0 };
         for (const k of list.ch) {
           const tp = int(bu, k.ch.find(g => isCtx(g, 1)));
           const q = int(bu, k.ch.find(g => isCtx(g, 2)));
           const idn = k.ch.find(g => isCtx(g, 3));
           if (tp === 1 && idn) { const num = String(int(bu, idn.ch[idn.ch.length - 1])); r.cand[num] = (r.cand[num] || 0) + q; }
+          else if (tp === 4) r.leg += q; // voto de legenda (so deputados)
           else if (tp === 2) r.branco += q;
           else if (tp === 3) r.nulo += q;
         }
@@ -154,14 +155,14 @@ async function main() {
   // idxSecao = posicao da linha em resultados_governador_por_secao.csv (0 = primeira secao).
   for (const [cod, key] of Object.entries(CARGOS)) {
     if (cod === String(CARGO)) continue;
-    const c = {}, br = [], nu = [];
+    const c = {}, br = [], nu = [], lg = [];
     done_rows.forEach((r, idx) => {
       const x = r.cg[cod];
-      br.push(x.branco); nu.push(x.nulo);
+      br.push(x.branco); nu.push(x.nulo); lg.push(x.leg || 0);
       for (const [num, v] of Object.entries(x.cand)) if (v) (c[num] || (c[num] = [])).push(idx, v);
     });
     const file = path.join(ROOT, 'data', `secoes_${key}.json`);
-    fs.writeFileSync(file, JSON.stringify({ cargo: key, n: done_rows.length, c, br, nu }));
+    fs.writeFileSync(file, JSON.stringify({ cargo: key, n: done_rows.length, c, br, nu, lg }));
     // Conferencia com data/legislativo_<cargo>.json (votos nominais por candidato)
     const leg = path.join(ROOT, 'data', `legislativo_${key}.json`);
     let msg = '';

@@ -101,3 +101,10 @@ seções chegaram ao TSE (horário de recebimento de cada seção), por estado o
 npm run dados:apuracao   # ~18 mil requisições pequenas (~15 min); rode depois de dados:secoes
 npm run build
 ```
+
+### Percentuais de deputados e senador
+
+Os percentuais seguem a base do TSE: votos do candidato / votos válidos computados (válidos + anulados sub judice).
+Nos municípios, `vc` (em `data/legislativo_*.json`) guarda essa base; por seção, a base é nominais + legenda
+(`lg` em `data/secoes_*.json`). Em 23 municípios da Câmara Federal o TSE publica um total 2 a 3 votos menor que a
+soma dos candidatos (votos de candidatos "anulado sub judice"); a diferença total é de 76 votos (0,002%).

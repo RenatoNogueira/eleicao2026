@@ -122,6 +122,7 @@ function sCargoData(){
     if(j.n!==SEC.length)throw new Error('secoes divergentes');
     const vt=new Int32Array(j.n);
     for(const k in j.c){const a=j.c[k];for(let i=0;i<a.length;i+=2)vt[a[i]]+=a[i+1]}
+    if(j.lg)for(let i=0;i<j.n;i++)vt[i]+=j.lg[i]; /* + votos de legenda: base dos percentuais do TSE */
     Object.assign(o,{c:j.c,br:j.br,nu:j.nu,vtot:vt,st:'ok'});
   }).catch(()=>{o.st='err'}).then(()=>{if(SS.cg===cg)renderSecoes()});
   return o;

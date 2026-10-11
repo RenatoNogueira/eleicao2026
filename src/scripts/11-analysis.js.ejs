@@ -10,14 +10,14 @@ function renderAnLeg(){
     let pi=-1,pv=0;d.parties.forEach((p,k)=>{const v=d.pm[k][mi];if(v>pv){pv=v;pi=k}});
     if(ci>=0)lc.set(ci,(lc.get(ci)||[]).concat(mi));
     if(pi>=0)lp.set(pi,(lp.get(pi)||[]).concat(mi));
-    const sh=d.vv[mi]?cv/d.vv[mi]*100:0;
+    const sh=d.base[mi]?cv/d.base[mi]*100:0;
     if(ci>=0&&(!best||sh>best.sh))best={sh,ci,mi};
   }
   ANLD={lc,rp:lp};
   const rc=[...lc].sort((a,b)=>b[1].length-a[1].length),rp=[...lp].sort((a,b)=>b[1].length-a[1].length);
   const mname=mi=>title(byCode[d.mun[mi]]?byCode[d.mun[mi]].name:d.mun[mi]);
   const top=d.cands[0],topN=(lc.get(top.i)||[]).length;
-  const half=[...lc.values()].flat().filter(mi=>{let cv=0;d.cands.forEach(c=>{if(d.mv[c.i][mi]>cv)cv=d.mv[c.i][mi]});return d.vv[mi]&&cv/d.vv[mi]>0.5}).length;
+  const half=[...lc.values()].flat().filter(mi=>{let cv=0;d.cands.forEach(c=>{if(d.mv[c.i][mi]>cv)cv=d.mv[c.i][mi]});return d.base[mi]&&cv/d.base[mi]>0.5}).length;
   const I=[
     ['🏛️',`${rp[0]?d.parties[rp[0][0]].sg:'—'} lidera em ${rp[0]?rp[0][1].length:0} de ${N} municípios`,`Partido com mais municípios em que é o mais votado para ${ANL_NAME[ANL]}.`],
     ['🥇',`${title(top.nu)} lidera em ${topN} municípios`,`Mais votado do estado (${fmt(top.v)} votos, ${d.parties[top.p].sg}); é o primeiro colocado em ${pc(topN/N*100,0)} dos municípios.`],
@@ -33,7 +33,7 @@ function openAnLeg(kind,k){
   const d=depLoad(ANL),N=d.mun.length,isC=kind==='c';
   const ms=(isC?ANLD.lc:ANLD.rp).get(k)||[];
   const val=mi=>isC?d.mv[k][mi]:d.pm[k][mi];
-  const rows=ms.map(mi=>({mi,v:val(mi),vv:d.vv[mi]})).sort((a,b)=>b.v-a.v);
+  const rows=ms.map(mi=>({mi,v:val(mi),vv:d.base[mi]})).sort((a,b)=>b.v-a.v);
   const sum=rows.reduce((s,r)=>s+r.v,0),mx=Math.max(...rows.map(r=>r.v),1);
   const mname=mi=>{const c=d.mun[mi];return title(byCode[c]?byCode[c].name:c)};
   let head,sub,stats;

@@ -53,14 +53,14 @@ function cmpLegisHtml(ds){
   const d=depLoad(CMPL),cols=cmpLegisCols(ds);
   const seg=['senador','federal','estadual'].map(k=>`<button data-c="${k}" class="${k===CMPL?'on':''}">${CMPL_NAME[k]}</button>`).join('');
   const cards=cols.map((c,i)=>{
-    const vv=c.mi<0?d.geral.validos:d.vv[c.mi];
+    const vv=c.mi<0?d.geral.validos:d.vv[c.mi],bs=c.mi<0?d.baseSt:d.base[c.mi]; /* % na base do TSE (validos + sub judice) */
     const cs=c.mi<0?d.cands.slice(0,5).map(x=>[x,x.v]):d.cands.map(x=>[x,d.mv[x.i][c.mi]]).sort((a,b)=>b[1]-a[1]).slice(0,5);
     let bp=null,bv=-1;d.parties.forEach((p,pi)=>{const v=c.mi<0?p.tot:d.pm[pi][c.mi];if(v>bv){bv=v;bp=p}});
-    const li=cs.map(([x,v],k)=>`<div class="lgl"><span class="n">${String(k+1).padStart(2,'0')}</span><span class="who"><b>${title(x.nu)}</b><small>${d.parties[x.p].sg}</small></span><span class="v">${fmt(v)}<small>${pp(vv?v/vv*100:0)}%</small></span></div>`).join('');
+    const li=cs.map(([x,v],k)=>`<div class="lgl"><span class="n">${String(k+1).padStart(2,'0')}</span><span class="who"><b>${title(x.nu)}</b><small>${d.parties[x.p].sg}</small></span><span class="v">${fmt(v)}<small>${pp(bs?v/bs*100:0)}%</small></span></div>`).join('');
     return `<div class="card ccard" ${c.state?'style="border-style:dashed"':''}>
       <div class="nm" style="${c.state?'':`border-left:4px solid ${CC[i]};padding-left:10px`}">${title(c.name)}</div>
       <div class="row"><span>Votos válidos</span><b class="num">${fmt(vv)}</b></div>
-      <div class="row"><span>Partido líder</span><b class="num" style="white-space:nowrap">${bp?bp.sg:'—'} · ${pp(vv?bv/vv*100:0)}%</b></div>
+      <div class="row"><span>Partido líder</span><b class="num" style="white-space:nowrap">${bp?bp.sg:'—'} · ${pp(bs?bv/bs*100:0)}%</b></div>
       <div style="margin-top:10px">${li}</div>
     </div>`;
   }).join('');
@@ -73,7 +73,7 @@ function cmpLegisHtml(ds){
     </div>`;
 }
 function cmpLegisCharts(ds){
-  const d=depLoad(CMPL),cols=cmpLegisCols(ds),L=cols.map(c=>title(c.name)),vvOf=c=>c.mi<0?d.geral.validos:d.vv[c.mi];
+  const d=depLoad(CMPL),cols=cmpLegisCols(ds),L=cols.map(c=>title(c.name)),vvOf=c=>c.mi<0?d.baseSt:d.base[c.mi];
   const col=i=>i<ds.length?CC[i].startsWith('var(')?css(CC[i].slice(4,-1)):CC[i]:css('--tx3');
   const tip=baseOpts().plugins.tooltip;
   const opts=baseOpts({plugins:{...baseOpts().plugins,tooltip:{...tip,callbacks:{label:c=>` ${c.dataset.label}: ${pp(c.raw)}%`}}},scales:{x:{grid:{display:false},ticks:{color:css('--tx2')},border:{display:false}},y:{beginAtZero:true,grid:{color:css('--line')},ticks:{color:css('--tx2'),callback:v=>v+'%'},border:{display:false}}}});

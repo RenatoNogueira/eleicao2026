@@ -74,7 +74,7 @@ async function main() {
 
     const mv = cands.map(() => new Array(mun.length).fill(0));
     const pm = parties.map(() => new Array(mun.length).fill(0));
-    const vv = new Array(mun.length).fill(0);
+    const vv = new Array(mun.length).fill(0), vc = new Array(mun.length).fill(0);
     let done = 0;
     await pool(mun, 10, async (code, mi) => {
       const m = await get(url(code));
@@ -82,6 +82,7 @@ async function main() {
       f.cands.forEach(c => { const i = idx.get(c.sqcand); if (i !== undefined) mv[i][mi] = num(c.vap); });
       f.parties.forEach((p, k) => { const pi = parties.findIndex(x => x.n === p.n && x.sg === p.sg); if (pi >= 0) pm[pi][mi] = p.tot; });
       vv[mi] = num(m.v && m.v.vv);
+      vc[mi] = num(m.v && m.v.vvc); // base dos percentuais do TSE: validos + anulados sub judice
       if (++done % 50 === 0) console.log(`  ${cg.key}: ${done}/${mun.length}`);
     });
 
@@ -92,9 +93,9 @@ async function main() {
       secoes: { total: num(st.s.ts), apuradas: num(st.s.st) },
       geral: {
         aptos: num(st.e.te), comp: num(st.e.c), abst: num(st.e.a),
-        nom: num(st.v.vnom), leg: num(st.v.vl), validos: num(st.v.vv), branco: num(st.v.vb), nulo: num(st.v.tvn),
+        nom: num(st.v.vnom), leg: num(st.v.vl), validos: num(st.v.vv), vvc: num(st.v.vvc), subjudice: num(st.v.vansj), branco: num(st.v.vb), nulo: num(st.v.tvn),
       },
-      mun, vv,
+      mun, vv, vc,
       parties: parties.map((p, i) => ({ ...p, eleitos: cands.filter(c => c.pi === i && elected(c)).length, cands: cands.filter(c => c.pi === i).length })),
       cands: cands.map(c => ({ id: c.sqcand, n: c.n, nu: c.nmu, nm: c.nm, p: c.pi, v: num(c.vap), pc: flt(c.pvapn), st: c.st || '', e: elected(c) ? 1 : 0, dv: c.dvt })),
       mv, pm,
