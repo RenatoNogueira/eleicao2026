@@ -128,8 +128,8 @@ $('#sExp').onclick=()=>{
 
 /* ----- Senador / Deputado Federal / Deputado Estadual (votos nominais por secao, carregados sob demanda) ----- */
 const SECD={};
-function sCargoData(){
-  const cg=SS.cg;
+function sCargoData(cgArg){
+  const cg=cgArg||SS.cg;
   if(SECD[cg])return SECD[cg];
   const o=SECD[cg]={st:'load'};
   fetch('data/secoes_'+cg+'.json'+(SECJ.ver&&SECJ.ver[cg]?'?v='+SECJ.ver[cg]:'')).then(r=>{if(!r.ok)throw new Error(r.status);return r.json()}).then(j=>{
@@ -138,7 +138,7 @@ function sCargoData(){
     for(const k in j.c){const a=j.c[k];for(let i=0;i<a.length;i+=2)vt[a[i]]+=a[i+1]}
     if(j.lg)for(let i=0;i<j.n;i++)vt[i]+=j.lg[i]; /* + votos de legenda: base dos percentuais do TSE */
     Object.assign(o,{c:j.c,br:j.br,nu:j.nu,vtot:vt,st:'ok'});
-  }).catch(()=>{o.st='err'}).then(()=>{if(SS.cg===cg)renderSecoes()});
+  }).catch(()=>{o.st='err'}).then(()=>{if(SS.cg===cg)renderSecoes();if(typeof cmcSecLoaded==='function')cmcSecLoaded(cg)});
   return o;
 }
 const sCandOf=(cg,n)=>{const d=depLoad(cg);return (d.byNum||(d.byNum=new Map(d.cands.map(c=>[String(c.n),c])))).get(String(n))};

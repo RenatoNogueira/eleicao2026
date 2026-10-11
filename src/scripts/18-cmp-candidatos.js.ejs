@@ -1,5 +1,5 @@
 /* ---------- Comparar: candidatos a senador e deputados (vantagens e quem levou mais votos) ---------- */
-const CMC={cg:'federal',ids:{federal:[0,1],estadual:[0,1],senador:[0,1]}};
+const CMC={cg:'federal',mun:'all',ids:{federal:[0,1],estadual:[0,1],senador:[0,1]}};
 const CMC_NAME={senador:'Senador',federal:'Deputado Federal',estadual:'Deputado Estadual'};
 const cmcColor=i=>{const c=CC[i%CC.length];return c.startsWith('var(')?css(c.slice(4,-1)):c};
 
@@ -23,7 +23,9 @@ function cmcHtml(){
   <div class="card">
     <h3>Vantagens entre candidatos</h3>
     <p class="sub">Escolha de 2 a 4 candidatos do mesmo cargo para ver quem levou mais votos em cada município e onde está a vantagem.</p>
-    <div class="toolbar" style="margin-top:12px"><div class="seg" id="ccCargo">${seg}</div></div>
+    <div class="toolbar" style="margin-top:12px"><div class="seg" id="ccCargo">${seg}</div>
+      <select class="input" id="ccMun" aria-label="Município da comparação">${cmcMunOptions()}</select>
+      <span style="font-size:13px;color:var(--tx2)">${CMC.mun==='all'?'Estado inteiro':'Comparando em '+pEscC(title(sName(CMC.mun)))}</span></div>
     <div class="picker">
       <div class="gsearch" style="max-width:320px;flex:none">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
@@ -40,7 +42,106 @@ function cmcHtml(){
 }
 const pEscC=t=>String(t==null?'':t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
+/* opcoes do seletor: estado, municipios escolhidos acima e todos os demais */
+function cmcMunOptions(){
+  const nm=c=>title(byCode[c].name),sel=c=>c===CMC.mun?' selected':'';
+  const todos=[...D].sort((x,y)=>x.name.localeCompare(y.name,'pt-BR'));
+  const chosen=CMP.filter(c=>byCode[c]);
+  return `<option value="all"${sel('all')}>Todo o estado</option>`+
+    (chosen.length?`<optgroup label="Municípios escolhidos acima">${chosen.map(c=>`<option value="${c}"${sel(c)}>${nm(c)}</option>`).join('')}</optgroup>`:'')+
+    `<optgroup label="Todos os municípios">${todos.map(d=>`<option value="${d.code}"${sel(d.code)}>${title(d.name)}</option>`).join('')}</optgroup>`;
+}
+
+function cmcMunData(){
+  const d=depLoad(CMC.cg),mi=d.munIdx[CMC.mun],cs=CMC.ids[CMC.cg].map(i=>d.cands[i]).filter(Boolean);
+  const base=d.base[mi],vs=cs.map(c=>d.mv[c.i][mi]);
+  const all=d.cands.map(c=>({c,v:d.mv[c.i][mi]})).sort((a,b)=>b.v-a.v);
+  const pos=cs.map(c=>all.findIndex(x=>x.c.i===c.i)+1);
+  return {d,mi,cs,base,vs,all,pos};
+}
+function cmcMunBodyHtml(){
+  const {d,cs,base,vs,all,pos}=cmcMunData(),nm=title(sName(CMC.mun));
+  const sum=vs.reduce((a,b)=>a+b,0)||1;
+  const order=[...cs.keys()].sort((a,b)=>vs[b]-vs[a]);
+  const cards=cs.map((c,k)=>{
+    const sh=base?vs[k]/base*100:0,df=sh-c.pc;
+    const rk=order.indexOf(k),next=order[rk+1],gap=next===undefined?null:vs[k]-vs[next];
+    return `<div class="card ccard" style="border-top:3px solid ${cmcColor(k)}">
+      <div class="nm" style="border-left:4px solid ${cmcColor(k)};padding-left:10px">${pEscC(title(c.nu))}</div>
+      <p class="sub" style="margin:2px 0 10px 14px">${pEscC(d.parties[c.p].sg)} · Nº ${c.n}</p>
+      <div class="row"><span>Votos em ${pEscC(nm)}</span><b class="num">${fmt(vs[k])}</b></div>
+      <div class="row"><span>% dos válidos do município</span><b class="num">${pp(sh)}%</b></div>
+      <div class="row"><span>Posição no município</span><b class="num">${pos[k]}º de ${d.cands.length}</b></div>
+      <div class="row"><span>No estado</span><b class="num">${pp(c.pc)}% <small style="color:var(--tx3);font-weight:500">(${df>=0?'+':'−'}${pp(Math.abs(df))} p.p. aqui)</small></b></div>
+      <div class="row"><span>Parcela entre os comparados</span><b class="num">${pp(vs[k]/sum*100)}%</b></div>
+      <div class="row"><span>Vantagem sobre o próximo</span><b class="num">${gap===null?'—':(gap>=0?'+':'−')+fmt(Math.abs(gap))}</b></div>
+    </div>`;
+  }).join('');
+  const L=cs[order[0]],S=cs[order[1]],dif=vs[order[0]]-vs[order[1]];
+  const stronger=cs.map((c,k)=>({c,d:(base?vs[k]/base*100:0)-c.pc})).sort((a,b)=>b.d-a.d)[0];
+  const txt=`Em <b>${pEscC(nm)}</b> (${fmt(base)} votos válidos), <b>${pEscC(title(L.nu))}</b> levou <b>${fmt(dif)}</b> votos a mais que <b>${pEscC(title(S.nu))}</b> (${fmt(vs[order[0]])} × ${fmt(vs[order[1]])}), `+
+    `ficando em ${pos[order[0]]}º lugar no município contra ${pos[order[1]]}º. `+
+    `${stronger&&stronger.d>0?`<b>${pEscC(title(stronger.c.nu))}</b> rende ${pp(stronger.d)} p.p. a mais aqui do que na média do estado. `:''}`+
+    `Os ${cs.length} comparados somam ${pp(sum/(base||1)*100)}% dos votos válidos do município.`;
+  const top=all.slice(0,5).map((x,i)=>{const sel=cs.findIndex(c=>c.i===x.c.i);
+    return `<div class="lgl"><span class="n">${String(i+1).padStart(2,'0')}</span><span class="who"><b>${pEscC(title(x.c.nu))}</b><small>${pEscC(d.parties[x.c.p].sg)}${sel>=0?' · comparado':''}</small></span><span class="v">${fmt(x.v)}<small>${pp(base?x.v/base*100:0)}%</small></span></div>`}).join('');
+  return `<div class="grid cgrid" style="margin-top:16px">${cards}</div>
+    <div class="grid g2" style="margin-top:16px">
+      <div class="card"><h3>Votos em ${pEscC(nm)}</h3><p class="sub">Quem levou mais votos no município entre os comparados</p><div class="ch tall"><canvas id="ccM1"></canvas></div></div>
+      <div class="card"><h3>Município × estado</h3><p class="sub">% dos votos válidos de cada candidato aqui e no estado inteiro</p><div class="ch tall"><canvas id="ccM2"></canvas></div></div>
+    </div>
+    <div class="grid g-21" style="margin-top:16px">
+      <div class="card"><h3>Por zona e seção</h3><p class="sub" id="ccZSub">Votos dos comparados dentro do município</p><div class="ch tall"><canvas id="ccZ"></canvas></div><p class="sub" id="ccZMsg" style="margin:8px 0 0"></p></div>
+      <div class="card"><h3>Mais votados no município</h3><p class="sub">Os 5 primeiros do cargo (todos os candidatos)</p><div style="margin-top:8px">${top}</div></div>
+    </div>
+    <div class="card" style="margin-top:16px"><h3>Leitura da comparação</h3><p class="sub" style="margin:6px 0 0;font-size:13px">${txt}</p></div>`;
+}
+
+function cmcMunCharts(){
+  if(!$('#ccM1'))return;
+  const {d,cs,base,vs}=cmcMunData(),O=baseOpts(),tx=css('--tx2'),ln=css('--line'),names=cs.map(c=>title(c.nu));
+  mk('ccM1',{type:'bar',data:{labels:names,datasets:[{data:vs,backgroundColor:cs.map((_,k)=>cmcColor(k)),borderRadius:8}]},
+    options:{...O,plugins:{legend:{display:false},tooltip:{...O.plugins.tooltip,callbacks:{label:x=>` ${fmt(x.raw)} votos (${pp(base?x.raw/base*100:0)}% dos válidos)`}}},
+      scales:{x:{grid:{display:false},ticks:{color:tx},border:{display:false}},y:{beginAtZero:true,grid:{color:ln},ticks:{color:tx},border:{display:false}}}}});
+  mk('ccM2',{type:'bar',data:{labels:names,datasets:[
+      {label:title(sName(CMC.mun)),data:vs.map(v=>base?v/base*100:0),backgroundColor:css('--a'),borderRadius:6},
+      {label:'Estado',data:cs.map(c=>c.pc),backgroundColor:css('--tx3'),borderRadius:6}]},
+    options:{...O,plugins:{...O.plugins,tooltip:{...O.plugins.tooltip,callbacks:{label:x=>` ${x.dataset.label}: ${pp(x.raw)}%`}}},
+      scales:{x:{grid:{display:false},ticks:{color:tx},border:{display:false}},y:{beginAtZero:true,grid:{color:ln},ticks:{color:tx,callback:v=>v+'%'},border:{display:false}}}}});
+  /* zonas (ou secoes, se o municipio tem uma zona so): votos por secao carregados sob demanda */
+  const o=sCargoData(CMC.cg),msg=$('#ccZMsg');
+  if(o.st!=='ok'){msg.textContent=o.st==='load'?'Carregando votos por seção…':'Não foi possível carregar os votos por seção (abra o painel por um servidor).';return}
+  const zon=new Map(),sec=new Map();
+  cs.forEach((c,k)=>{
+    const a=o.c[String(c.n)]||[];
+    for(let i=0;i<a.length;i+=2){
+      const s=SEC[a[i]];if(s.code!==CMC.mun)continue;
+      (zon.get(s.zona)||zon.set(s.zona,new Array(cs.length).fill(0)).get(s.zona))[k]+=a[i+1];
+      (sec.get(s.zona+'/'+s.secao)||sec.set(s.zona+'/'+s.secao,new Array(cs.length).fill(0)).get(s.zona+'/'+s.secao))[k]+=a[i+1];
+    }
+  });
+  let labels,rows;
+  if(zon.size>=2){
+    const l=[...zon.entries()].sort((a,b)=>a[0].localeCompare(b[0]));
+    labels=l.map(x=>'Zona '+parseInt(x[0],10));rows=l.map(x=>x[1]);
+    $('#ccZSub').textContent='Votos dos comparados em cada zona eleitoral do município';
+  }else{
+    const l=[...sec.entries()].sort((a,b)=>b[1].reduce((s,v)=>s+v,0)-a[1].reduce((s,v)=>s+v,0)).slice(0,12);
+    labels=l.map(x=>'Seção '+parseInt(x[0].split('/')[1],10));rows=l.map(x=>x[1]);
+    $('#ccZSub').textContent='As 12 seções com mais votos dos comparados (município com uma zona só)';
+  }
+  msg.textContent='';
+  mk('ccZ',{type:'bar',data:{labels,datasets:cs.map((c,k)=>({label:names[k],data:rows.map(r=>r[k]),backgroundColor:cmcColor(k),borderRadius:5}))},
+    options:{...O,plugins:{...O.plugins,tooltip:{...O.plugins.tooltip,callbacks:{label:x=>` ${x.dataset.label}: ${fmt(x.raw)} votos`}}},
+      scales:{x:{grid:{display:false},ticks:{color:tx,maxRotation:45,minRotation:0},border:{display:false}},y:{beginAtZero:true,grid:{color:ln},ticks:{color:tx},border:{display:false}}}}});
+}
+/* chamado quando os votos por secao terminam de carregar */
+function cmcSecLoaded(cg){
+  if(cg===CMC.cg&&CMC.mun!=='all'&&$('#v-compare').classList.contains('on'))renderCompare();
+}
+
 function cmcBodyHtml(){
+  if(CMC.mun!=='all'&&depLoad(CMC.cg).munIdx[CMC.mun]!==undefined)return cmcMunBodyHtml();
   const {d,cs,rows}=cmcData(),N=rows.length;
   const wins=cs.map((_,k)=>rows.filter(r=>r.tot>0&&r.w===k).length);
   const tot=cs.map(c=>c.v),sum=tot.reduce((a,b)=>a+b,0)||1;
@@ -87,7 +188,9 @@ function cmcBodyHtml(){
 }
 
 function cmcCharts(){
-  if(CMC.ids[CMC.cg].length<2||!$('#ccA'))return;
+  if(CMC.ids[CMC.cg].length<2)return;
+  if(CMC.mun!=='all'&&$('#ccM1'))return cmcMunCharts();
+  if(!$('#ccA'))return;
   const {d,cs,rows}=cmcData(),O=baseOpts(),tx=css('--tx2'),ln=css('--line');
   const names=cs.map(c=>title(c.nu));
   /* A: votos nos 10 maiores colegios */
@@ -148,6 +251,9 @@ function cmcBind(){
   box.addEventListener('mousedown',e=>{const b=e.target.closest('button[data-i]');if(b){e.preventDefault();cmcAdd(+b.dataset.i)}});
   inp.addEventListener('blur',()=>setTimeout(()=>box.classList.remove('on'),150));
 }
+$('#v-compare').addEventListener('change',e=>{
+  if(e.target.id==='ccMun'){CMC.mun=e.target.value;renderCompare()}
+});
 $('#v-compare').addEventListener('click',e=>{
   const cg=e.target.closest('#ccCargo button');if(cg){CMC.cg=cg.dataset.cc;renderCompare();return}
   const rm=e.target.closest('[data-ccrm]');
