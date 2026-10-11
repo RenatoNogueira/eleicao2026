@@ -155,3 +155,23 @@ O CI (`.github/workflows/ci.yml`) roda validação e build em cada push; `dados-
 
 **Limitações conhecidas** (avisadas pelo validador, não bloqueiam): 2 locais de votação sem coordenada válida e 47 seções
 com mais votos que eleitores no cadastro de locais — nesses casos a abstenção por seção é tratada como estimativa.
+
+## Testes de interface
+
+`tests/interface.test.js` abre o painel gerado (`public/`) num Chrome/Edge sem interface e confere: todas as abas sem erro,
+endereços em português, percentuais do TSE com duas casas, busca de candidato, link direto de município, compartilhar,
+Presidente (1º turno e 2º aguardando), filtro de Zonas e seções, Comparar candidatos (inclusive por município), menu
+mobile sem rolagem horizontal e aviso de nova versão.
+
+```bash
+npm run build
+npm run teste:instalar   # uma vez (as dependências ficam em tests/, fora do build do Vercel)
+npm run teste            # usa o Chrome/Edge instalado; CHROME_PATH sobrescreve
+```
+
+O CI roda esses testes em cada push (job `interface`).
+
+## Configuração
+
+`site.config.json` guarda o ID do Google Analytics (`gaId`). A variável `GA_ID` sobrescreve (vazia desativa) e o formato
+é validado no build. O endereço público vem de `SITE_URL` ou das variáveis do Vercel.

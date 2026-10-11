@@ -14,7 +14,9 @@
     "dados:secoes": "node tools/tse-secoes.js",
     "dados:locais": "node tools/tse-locais.js",
     "dados:apuracao": "node tools/tse-apuracao.js",
-    "conferir:tse": "node tools/conferir-tse.js"
+    "conferir:tse": "node tools/conferir-tse.js",
+    "teste": "npm --prefix tests test",
+    "teste:instalar": "npm --prefix tests install --no-audit --no-fund"
   },
   "devDependencies": {
     "ejs": "^3.1.10"

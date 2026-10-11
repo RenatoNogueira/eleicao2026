@@ -24,3 +24,19 @@ jobs:
         run: npm run build
       - name: Arquivos publicados
         run: test -s public/index.html && test -s public/version.json && test -s public/og-image.png && test -s public/data/locais.json
+
+  interface:
+    runs-on: ubuntu-latest
+    needs: verificar
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Dependencias dos testes (isoladas do build)
+        run: npm ci --prefix tests --no-audit --no-fund
+      - name: Testes de interface (Chrome sem interface)
+        run: CHROME_PATH="$(which google-chrome)" npm run teste

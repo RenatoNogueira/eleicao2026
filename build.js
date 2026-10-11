@@ -21,8 +21,11 @@ function readCsv(file) {
   });
 }
 
-// ID do Google Analytics (GA4). Sobrescreva com GA_ID=... ou use GA_ID= (vazio) para desativar.
-const gaId = process.env.GA_ID !== undefined ? process.env.GA_ID : 'G-KPKFQ4TD06';
+// Configuracao do site (site.config.json): ID do Google Analytics (GA4). A variavel de ambiente GA_ID sobrescreve
+// (GA_ID= vazio desativa). O ID nao e segredo, mas fica em arquivo/variavel e nao espalhado pelo codigo.
+const siteConfig = fs.existsSync(path.join(ROOT, 'site.config.json')) ? JSON.parse(fs.readFileSync(path.join(ROOT, 'site.config.json'), 'utf8')) : {};
+const gaId = process.env.GA_ID !== undefined ? process.env.GA_ID : (siteConfig.gaId || '');
+if (gaId && !/^G-[A-Z0-9]{6,}$/.test(gaId)) throw new Error('GA_ID invalido (esperado G-XXXXXXXXXX): ' + gaId);
 
 function build() {
   // 1) dados consistentes? (erro aqui derruba o build e o deploy anterior continua no ar)
