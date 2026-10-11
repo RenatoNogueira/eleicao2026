@@ -91,6 +91,7 @@ function build() {
   const host = process.env.SITE_URL || process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL || '';
   const siteUrl = host ? (/^https?:\/\//.test(host) ? host : 'https://' + host).replace(/\/$/, '') : '';
   const ogSrc = path.join(SRC, 'assets', 'og-image.png');
+  fs.mkdirSync(PUBLIC_DIR, { recursive: true });
   if (fs.existsSync(ogSrc)) fs.copyFileSync(ogSrc, path.join(PUBLIC_DIR, 'og-image.png'));
   const presidenteJson = fs.readFileSync(path.join(ROOT, 'data', 'presidente.json'), 'utf8').trim();
   // abstencao oficial por zona (TSE): { "codMun|zona": [eleitores aptos, abstencao] }
