@@ -4,8 +4,9 @@ const D = RAW.map(r=>{const h=r.a+r.b,t=r.v||h,k=r.k||0;return {code:r.c,name:r.
 const ST = (()=>{const S=f=>D.reduce((s,d)=>s+d[f],0),a=S('a'),b=S('b'),k=S('k'),t=S('t');return {a,b,k,o:S('o'),br:S('br'),nu:S('nu'),ap:S('ap'),cp:S('cp'),ab:S('ab'),pab:S('ap')?S('ab')/S('ap')*100:0,t,pa:a/t*100,pb:b/t*100,pk:k/t*100,ha:a/(a+b)*100,hb:b/(a+b)*100,diff:a-b,wa:D.filter(d=>d.lead==='a').length,wb:D.filter(d=>d.lead==='b').length}})();
 const byCode = Object.fromEntries(D.map(d=>[d.code,d]));
 const fmt = n=>Math.round(n).toLocaleString('pt-BR');
-const pc = (n,d=1)=>n.toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d})+'%';
-const pp = n=>n.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1});
+/* percentuais com 2 casas, como o TSE divulga (ex.: 30,91%); d=0 so para contagens inteiras (100%) */
+const pc = (n,d=2)=>{const k=d===0?0:2;return n.toLocaleString('pt-BR',{minimumFractionDigits:k,maximumFractionDigits:k})+'%'};
+const pp = n=>n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
 const norm = s=>s.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
 const $ = (s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
 const css = v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
