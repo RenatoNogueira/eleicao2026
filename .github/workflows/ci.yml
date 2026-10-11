@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  push:
+    branches: [master, develop]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Sintaxe das ferramentas
+        run: for f in tools/*.js build.js; do node --check "$f"; done
+      - name: Consistencia dos dados
+        run: npm run validar
+      - name: Build (valida a pagina gerada)
+        run: npm run build
+      - name: Arquivos publicados
+        run: test -s public/index.html && test -s public/version.json && test -s public/og-image.png && test -s public/data/locais.json

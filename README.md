@@ -106,8 +106,9 @@ npm run build
 
 Os percentuais seguem a base do TSE: votos do candidato / votos válidos computados (válidos + anulados sub judice).
 Nos municípios, `vc` (em `data/legislativo_*.json`) guarda essa base; por seção, a base é nominais + legenda
-(`lg` em `data/secoes_*.json`). Em 23 municípios da Câmara Federal o TSE publica um total 2 a 3 votos menor que a
-soma dos candidatos (votos de candidatos "anulado sub judice"); a diferença total é de 76 votos (0,002%).
+(`lg` em `data/secoes_*.json`). Cinco números de candidato a Deputado Federal (76 votos no total) aparecem nos boletins de urna mas não no resultado do
+TSE (registro anulado/indeferido); o TSE não os soma nos válidos. A ferramenta de seções os conta como nulos, para que a
+base de cada município bata exatamente com os votos válidos computados.
 
 ### Abstenção
 
@@ -138,3 +139,19 @@ endereço absoluto do site: `SITE_URL` ou, no Vercel, `VERCEL_PROJECT_PRODUCTION
 Cada build gera `public/version.json` (hash do conteúdo) e embute o mesmo id na página. O painel confere essa versão ao
 abrir, ao voltar para a aba e a cada 5 minutos; se houver uma nova, mostra "Há uma nova versão do painel" com o botão
 **Atualizar agora**. O `vercel.json` manda o navegador sempre revalidar a página e nunca guardar o `version.json`.
+
+## Qualidade, validações e operação
+
+| Comando | Para que serve |
+|---|---|
+| `npm run validar` | Confere todos os dados (somas município × zona × seção × estado, base dos percentuais, alinhamento de locais e apuração, presidente, legislativo). Erro = sai com código 1. |
+| `npm run build` | Roda a validação antes e, depois de gerar a página, confere a sintaxe dos scripts e dos JSON embutidos. Qualquer problema derruba o build e o Vercel mantém o deploy anterior. |
+| `npm run conferir:tse` | Compara os totais publicados com os arquivos atuais do TSE (detecta dados desatualizados). Roda diariamente no GitHub Actions. |
+| `npm run dados:rapido` | Atualiza governador, legislativo e presidente e valida. |
+| `npm run dados:tudo` | Atualiza tudo na ordem correta (inclui boletins de urna e apuração); use `--locais` para incluir o cadastro de locais. |
+
+**Ordem dos dados** (cada etapa depende da anterior): governador → legislativo → presidente → seções → locais → apuração → validar → build.
+O CI (`.github/workflows/ci.yml`) roda validação e build em cada push; `dados-tse.yml` confere os dados com o TSE todo dia.
+
+**Limitações conhecidas** (avisadas pelo validador, não bloqueiam): 2 locais de votação sem coordenada válida e 47 seções
+com mais votos que eleitores no cadastro de locais — nesses casos a abstenção por seção é tratada como estimativa.

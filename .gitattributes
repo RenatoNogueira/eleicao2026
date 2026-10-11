@@ -1,0 +1,5 @@
+# Normaliza as quebras de linha (evita o aviso LF/CRLF e diffs ruidosos no Windows)
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.zip binary

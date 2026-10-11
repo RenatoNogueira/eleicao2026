@@ -156,11 +156,22 @@ async function main() {
   for (const [cod, key] of Object.entries(CARGOS)) {
     if (cod === String(CARGO)) continue;
     const c = {}, br = [], nu = [], lg = [];
+    // Numeros de candidato que aparecem nos boletins mas nao no resultado do TSE (registro anulado/indeferido):
+    // o TSE nao os soma nos validos, entao contamos como nulos para a base bater com os totais oficiais.
+    const legFile = path.join(ROOT, 'data', `legislativo_${key}.json`);
+    const known = fs.existsSync(legFile) ? new Set(JSON.parse(fs.readFileSync(legFile, 'utf8')).cands.map(k => String(k.n))) : null;
+    let fora = 0;
     done_rows.forEach((r, idx) => {
       const x = r.cg[cod];
-      br.push(x.branco); nu.push(x.nulo); lg.push(x.leg || 0);
-      for (const [num, v] of Object.entries(x.cand)) if (v) (c[num] || (c[num] = [])).push(idx, v);
+      let nulo = x.nulo;
+      for (const [num, v] of Object.entries(x.cand)) {
+        if (!v) continue;
+        if (known && !known.has(num)) { nulo += v; fora += v; continue; }
+        (c[num] || (c[num] = [])).push(idx, v);
+      }
+      br.push(x.branco); nu.push(nulo); lg.push(x.leg || 0);
     });
+    if (fora) console.log(`  ${key}: ${fora} votos de candidatos fora do resultado do TSE contados como nulos`);
     const file = path.join(ROOT, 'data', `secoes_${key}.json`);
     fs.writeFileSync(file, JSON.stringify({ cargo: key, n: done_rows.length, c, br, nu, lg }));
     // Conferencia com data/legislativo_<cargo>.json (votos nominais por candidato)

@@ -62,7 +62,7 @@ function sAbst(rows){
   if(LOC.st!=='ok')return null;
   const z=SS.group==='zona',set=new Set(rows.map(x=>z?x.code+'|'+x.zona:x.i));
   let ap=0,vot=0;
-  sBase().forEach(s=>{if(set.has(z?s.code+'|'+s.zona:s.i)){const l=LOC.s[s.i];ap+=l[1]+l[4];vot+=s.a+s.b+s.k+s.o+s.br+s.nu}});
+  sBase().forEach(s=>{if(set.has(z?s.code+'|'+s.zona:s.i)){const l=LOC.s[s.i],v=s.a+s.b+s.k+s.o+s.br+s.nu;ap+=Math.max(l[1]+l[4],v);vot+=v}});
   return ap?{n:Math.max(0,ap-vot),p:Math.max(0,ap-vot)/ap*100,est:true}:null;
 }
 function sFillZonas(){
@@ -246,13 +246,13 @@ $('#sCargo').onclick=e=>{const b=e.target.closest('button');if(!b)return;SS.cg=b
 /* ----- gaveta com os detalhes da secao (local de votacao, eleitorado, resultado) ----- */
 function openSecao(i){
   const s=SEC[i],L=sLocOf(i),nom=s.a+s.b+s.k+s.o,tot=nom+s.br+s.nu;
-  const apt=L?L.el+L.elAg:0,pa=nom?s.a/nom*100:0,pb=nom?s.b/nom*100:0;
+  const apt=L&&L.el+L.elAg>=tot?L.el+L.elAg:0,pa=nom?s.a/nom*100:0,pb=nom?s.b/nom*100:0;
   const row=(k,v)=>v?`<div style="display:flex;justify-content:space-between;gap:14px;padding:9px 0;border-bottom:1px solid var(--line);font-size:13px"><span style="color:var(--tx2)">${k}</span><span style="text-align:right;font-weight:600">${v}</span></div>`:'';
   let det='';
   if(L){
     const ag=L.ag?L.ag.split(','):[];
     const map=L.lat&&L.lat!=='-1'?`<a class="btn" target="_blank" rel="noopener" style="text-decoration:none" href="https://www.openstreetmap.org/?mlat=${encodeURIComponent(L.lat)}&mlon=${encodeURIComponent(L.lon)}#map=17/${encodeURIComponent(L.lat)}/${encodeURIComponent(L.lon)}">Ver no mapa ↗</a>`:'';
-    det=`<div style="margin-top:18px">${row('Endereço',sEsc(title(L.end)))}${row('Bairro / localidade',sEsc(title(L.bairro)))}${row('CEP',sEsc(L.cep))}${row('Tipo de local',sEsc(L.tipo))}${row('Acessibilidade',L.ac?'Seção com acessibilidade':'Sem acessibilidade')}${row('Eleitores da seção',fmt(L.el))}${ag.length?row('Seções agregadas',ag.join(', ')+' ('+fmt(L.elAg)+' eleitores)'):''}${row('Eleitorado apto (total)',fmt(apt))}</div>${map?'<div style="margin-top:14px">'+map+'</div>':''}`;
+    det=`<div style="margin-top:18px">${row('Endereço',sEsc(title(L.end)))}${row('Bairro / localidade',sEsc(title(L.bairro)))}${row('CEP',sEsc(L.cep))}${row('Tipo de local',sEsc(L.tipo))}${row('Acessibilidade',L.ac?'Seção com acessibilidade':'Sem acessibilidade')}${row('Eleitores da seção',fmt(L.el))}${ag.length?row('Seções agregadas',ag.join(', ')+' ('+fmt(L.elAg)+' eleitores)'):''}${row('Eleitorado apto (total)',apt?fmt(apt):'indisponível no cadastro')}</div>${map?'<div style="margin-top:14px">'+map+'</div>':''}`;
   }else det='<p class="sub" style="margin-top:18px">Dados do local de votação indisponíveis.</p>';
   const comp=apt?`${pc(tot/apt*100,1)} do eleitorado`:'';
   let cg='';

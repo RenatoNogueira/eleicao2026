@@ -25,6 +25,10 @@ function readCsv(file) {
 const gaId = process.env.GA_ID !== undefined ? process.env.GA_ID : 'G-KPKFQ4TD06';
 
 function build() {
+  // 1) dados consistentes? (erro aqui derruba o build e o deploy anterior continua no ar)
+  const v = require('./tools/validar-dados').validar({ silencioso: true });
+  v.avisos.forEach(a => console.warn('Aviso de dados: ' + a));
+  if (v.erros.length) throw new Error('Dados inconsistentes (rode npm run validar):\n  - ' + v.erros.join('\n  - '));
   const rows = readCsv(CSV);
   const data = rows.map(r => ({
     c: r.codigo_municipio,
@@ -116,6 +120,18 @@ function build() {
   const dep = k => fs.readFileSync(path.join(ROOT, 'data', `legislativo_${k}.json`), 'utf8').trim();
   let html = ejs.render(fs.readFileSync(tpl, 'utf8'), { buildId: '__BUILD_ID__', data, mapJson, secoesJson, presidenteJson, apuracaoJson, siteUrl, gaId, flagUri, iconUri, depFederal: dep('federal'), depEstadual: dep('estadual'), depSenador: dep('senador') }, { filename: tpl });
   fs.mkdirSync(PUBLIC_DIR, { recursive: true });
+  // 2) pagina gerada: scripts com sintaxe valida, sem marcadores esquecidos nem dados quebrados
+  const problemas = [];
+  [...html.matchAll(/<script(?![^>]*type="application\/json")[^>]*>([\s\S]*?)<\/script>/g)].forEach((m, i) => {
+    if (!m[1].trim() || /src=/.test(m[0].slice(0, m[0].indexOf('>')))) return;
+    try { new Function(m[1]); } catch (e) { problemas.push(`script ${i}: erro de sintaxe: ${e.message}`); }
+  });
+  [...html.matchAll(/<script type="application\/json" id="([^"]+)">([\s\S]*?)<\/script>/g)].forEach(m => {
+    try { JSON.parse(m[2]); } catch (e) { problemas.push(`JSON embutido #${m[1]} invalido: ${e.message}`); }
+  });
+  if (/\[object Object\]|<%[-=]?/.test(html.replace(/<script[\s\S]*?<\/script>/g, ''))) problemas.push('marcador de template ou [object Object] na pagina');
+  if (html.length > 6 * 1024 * 1024) problemas.push(`pagina muito grande (${(html.length / 1048576).toFixed(1)} MB)`);
+  if (problemas.length) throw new Error('Pagina gerada com problemas:\n  - ' + problemas.join('\n  - '));
   // id da versao: hash do conteudo da pagina (igual conteudo = mesmo id); o painel compara com public/version.json
   const buildId = require('crypto').createHash('sha1').update(html).digest('hex').slice(0, 12);
   html = html.split('__BUILD_ID__').join(buildId);

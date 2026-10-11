@@ -1,0 +1,17 @@
+name: Dados x TSE
+
+# Confere se os totais publicados ainda batem com os do TSE (detecta dados desatualizados)
+on:
+  schedule:
+    - cron: '0 12 * * *'
+  workflow_dispatch:
+
+jobs:
+  conferir:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node tools/conferir-tse.js

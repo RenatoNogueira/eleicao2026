@@ -3,16 +3,23 @@
   "private": true,
   "description": "Painel de resultados do governo do Maranhao 2026, gerado com EJS a partir do CSV",
   "scripts": {
+    "validar": "node tools/validar-dados.js",
     "build": "node build.js",
     "watch": "node build.js --watch",
+    "dados:tudo": "node tools/atualizar-tudo.js",
+    "dados:rapido": "node tools/atualizar-tudo.js --rapido",
+    "dados:governador": "node tools/tse-governador.js",
     "dados:legislativo": "node tools/tse-deputados.js",
+    "dados:presidente": "node tools/tse-presidente.js",
     "dados:secoes": "node tools/tse-secoes.js",
     "dados:locais": "node tools/tse-locais.js",
-    "dados:presidente": "node tools/tse-presidente.js",
-    "dados:governador": "node tools/tse-governador.js",
-    "dados:apuracao": "node tools/tse-apuracao.js"
+    "dados:apuracao": "node tools/tse-apuracao.js",
+    "conferir:tse": "node tools/conferir-tse.js"
   },
   "devDependencies": {
     "ejs": "^3.1.10"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }
