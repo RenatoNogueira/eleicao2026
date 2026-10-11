@@ -1,5 +1,14 @@
 /* ---------- nav ---------- */
 let skTimer=null,curView=null,pgRaf=0;
+/* enderecos em portugues: #visao-geral, #mapa, #municipios... (os antigos em ingles continuam funcionando) */
+const ROUTES={overview:'visao-geral',map:'mapa',cities:'municipios',compare:'comparar',analysis:'analises',pres:'presidente',secoes:'zonas-e-secoes',deps:'legislativo'};
+const ROUTE_VIEW=Object.fromEntries(Object.entries(ROUTES).map(([v,s])=>[s,v]));
+function viewFromHash(h){
+  h=decodeURIComponent((h||'').replace(/^#/,'')).split('/')[0].toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  if(ROUTE_VIEW[h])return ROUTE_VIEW[h];
+  if(ROUTES[h])return h; /* hash antigo, ex.: #overview */
+  return null;
+}
 const MORE_VIEWS=['compare','analysis','secoes','deps'];
 /* trava a rolagem da pagina enquanto uma gaveta (modal) ou a folha "Mais" estiver aberta */
 (()=>{
@@ -30,7 +39,7 @@ function go(v,instant){
   $$('#tabbar [data-v]').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
   $('#tbMore').classList.toggle('on',MORE_VIEWS.includes(v));$$('#moreSheet [data-v]').forEach(b=>b.classList.toggle('on',b.dataset.v===v));closeMore();
   $$('.view').forEach(s=>s.classList.toggle('on',s.id==='v-'+v));
-  history.replaceState(null,'','#'+v);scrollTo({top:0});
+  history.replaceState(null,'','#'+(ROUTES[v]||v));scrollTo({top:0});
   const view=$('#v-'+v);
   if(v==='compare'&&!same)cmpSig=null;
   if(v==='deps'&&!same){depSig=null;depCmpSig=null}
@@ -41,6 +50,8 @@ function go(v,instant){
   ensureProgress(view);setProgress(view,0);view.classList.add('sk');runProgress(view,dur);
   skTimer=setTimeout(reveal,dur);
 }
+/* usuario editou o endereco ou usou voltar/avancar */
+addEventListener('hashchange',()=>{const h=location.hash,v=viewFromHash(h);if(v&&v!==curView)go(v);if(typeof applyDeepLink==='function')applyDeepLink(h)});
 $('#nav').onclick=e=>{const b=e.target.closest('button');if(b)go(b.dataset.v)};
 $('#tabbar').onclick=e=>{const b=e.target.closest('button');if(!b)return;if(b.id==='tbMore'){$('#moreSheet').classList.contains('on')?closeMore():openMore()}else go(b.dataset.v)};
 $('#moreSheet').onclick=e=>{const b=e.target.closest('button[data-v]');if(b)go(b.dataset.v)};

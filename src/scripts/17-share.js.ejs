@@ -1,0 +1,62 @@
+/* ---------- compartilhar: link da aba ou do municipio aberto ---------- */
+const slugOf=s=>norm(s).replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+const SLUG_CODE=Object.fromEntries(D.map(d=>[slugOf(d.name),d.code]));
+const VIEW_TITLE={overview:'Visão geral',map:'Mapa',cities:'Municípios',compare:'Comparar municípios',analysis:'Análises',pres:'Presidente',secoes:'Zonas e seções',deps:'Legislativo'};
+const SHARE_ICON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" width="20" height="20"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 10.5l6.8-4M8.6 13.5l6.8 4"/></svg>';
+
+function toast(msg){
+  const t=$('#toast');t.textContent=msg;t.classList.add('on');
+  clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('on'),2400);
+}
+/* Web Share no celular; senao copia o link */
+async function shareLink(title,text){
+  const url=location.href;
+  if(navigator.share){
+    try{await navigator.share({title,text,url});return}
+    catch(e){if(e&&e.name==='AbortError')return}
+  }
+  try{await navigator.clipboard.writeText(url);toast('Link copiado')}
+  catch(e){
+    const i=document.createElement('input');i.value=url;i.style.position='fixed';i.style.opacity='0';document.body.appendChild(i);i.select();
+    try{document.execCommand('copy');toast('Link copiado')}catch(_){toast(url)}
+    i.remove();
+  }
+}
+$('#share').onclick=()=>{
+  const v=VIEW_TITLE[curView]||'Painel';
+  shareLink(`Dashboard MA · ${v}`,`Eleições 2026 no Maranhão · ${v}`);
+};
+
+/* endereco do municipio aberto: #municipios/sao-luis (ao fechar, volta para o da aba) */
+const _openDrawer=openDrawer,_closeDrawer=closeDrawer;
+openDrawer=function(code){
+  _openDrawer(code);
+  if(byCode[code])history.replaceState(null,'','#municipios/'+slugOf(byCode[code].name));
+};
+closeDrawer=function(){
+  _closeDrawer();
+  if(curView)history.replaceState(null,'','#'+(ROUTES[curView]||curView));
+};
+function applyDeepLink(h){
+  const p=decodeURIComponent((h||'').replace(/^#/,'')).split('/')[1];
+  if(!p)return;
+  const code=SLUG_CODE[p.toLowerCase()]||(byCode[p]?p:null);
+  if(code)setTimeout(()=>_openDrawer(code)||history.replaceState(null,'','#municipios/'+slugOf(byCode[code].name)),350);
+}
+
+/* botao compartilhar dentro de toda gaveta (municipio, candidato, secao, presidente) */
+(()=>{
+  const dr=$('#drawer');
+  const inject=()=>{
+    if(!dr.classList.contains('on')||dr.querySelector('.shr'))return;
+    const b=document.createElement('button');
+    b.className='icon-btn shr';b.setAttribute('aria-label','Compartilhar');b.title='Compartilhar';b.innerHTML=SHARE_ICON;
+    b.onclick=()=>{
+      const h=dr.querySelector('h2'),sub=dr.querySelector('h2 + p');
+      const name=h?h.textContent.trim():'Dashboard MA';
+      shareLink(`${name} · Dashboard MA`,`${name}${sub?' — '+sub.textContent.trim():''}`);
+    };
+    dr.appendChild(b);
+  };
+  new MutationObserver(inject).observe(dr,{attributes:true,attributeFilter:['class'],childList:true});
+})();

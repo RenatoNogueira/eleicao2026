@@ -116,3 +116,19 @@ zona): `resultados_governador_por_municipio.csv` (colunas `eleitores_aptos`, `co
 `resultados_governador_por_zona.csv`, ambos gerados por `npm run dados:governador`. Em Zonas e seções, recortes de estado,
 município ou zona usam o valor oficial; recortes de seção (ou com filtro de líder) são **estimados** pelo cadastro de locais
 de votação, porque o boletim de urna só informa o comparecimento (o cadastro difere ~0,1% do eleitorado da eleição).
+
+## Endereços das abas
+
+`#visao-geral`, `#mapa`, `#municipios`, `#comparar`, `#analises`, `#presidente`, `#zonas-e-secoes` e `#legislativo`.
+Os endereços antigos em inglês (`#overview`, `#map`, `#pres`...) continuam funcionando e são convertidos.
+
+## Compartilhar
+
+O botão de compartilhar (cabeçalho e dentro de cada gaveta) usa o compartilhamento nativo do celular (Web Share) e,
+onde ele não existe, copia o link. O endereço de um município é `#municipios/sao-luis` e abre direto a gaveta dele.
+
+### Imagem de prévia
+
+`src/assets/og-image.png` (1200×630) é a imagem que aparece ao colar o link no WhatsApp e nas redes; o build a copia para
+`public/og-image.png`. Para regerar: `powershell -ExecutionPolicy Bypass -File tools\gerar-og-image.ps1`. A meta tag usa o
+endereço absoluto do site: `SITE_URL` ou, no Vercel, `VERCEL_PROJECT_PRODUCTION_URL` (automática).

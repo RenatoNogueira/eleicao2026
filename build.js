@@ -87,6 +87,11 @@ function build() {
     if (a.n !== secRows.length) throw new Error('data/apuracao.json fora de sincronia com o CSV de secoes (rode npm run dados:apuracao)');
     apuracaoJson = JSON.stringify(a);
   } else console.warn('Aviso: data/apuracao.json nao encontrado (rode npm run dados:apuracao); o grafico de apuracao ficara oculto');
+  // URL publica do site (a previa ao compartilhar exige endereco absoluto): SITE_URL ou as variaveis do Vercel
+  const host = process.env.SITE_URL || process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL || '';
+  const siteUrl = host ? (/^https?:\/\//.test(host) ? host : 'https://' + host).replace(/\/$/, '') : '';
+  const ogSrc = path.join(SRC, 'assets', 'og-image.png');
+  if (fs.existsSync(ogSrc)) fs.copyFileSync(ogSrc, path.join(PUBLIC_DIR, 'og-image.png'));
   const presidenteJson = fs.readFileSync(path.join(ROOT, 'data', 'presidente.json'), 'utf8').trim();
   // abstencao oficial por zona (TSE): { "codMun|zona": [eleitores aptos, abstencao] }
   const zab = {};
@@ -108,7 +113,7 @@ function build() {
   fs.writeFileSync(path.join(PUBLIC_DIR, 'favicon.svg'), iconSvg, 'utf8');
   const iconUri = 'data:image/svg+xml;base64,' + Buffer.from(iconSvg).toString('base64');
   const dep = k => fs.readFileSync(path.join(ROOT, 'data', `legislativo_${k}.json`), 'utf8').trim();
-  const html = ejs.render(fs.readFileSync(tpl, 'utf8'), { data, mapJson, secoesJson, presidenteJson, apuracaoJson, gaId, flagUri, iconUri, depFederal: dep('federal'), depEstadual: dep('estadual'), depSenador: dep('senador') }, { filename: tpl });
+  const html = ejs.render(fs.readFileSync(tpl, 'utf8'), { data, mapJson, secoesJson, presidenteJson, apuracaoJson, siteUrl, gaId, flagUri, iconUri, depFederal: dep('federal'), depEstadual: dep('estadual'), depSenador: dep('senador') }, { filename: tpl });
   fs.mkdirSync(PUBLIC_DIR, { recursive: true });
   fs.writeFileSync(path.join(PUBLIC_DIR, 'index.html'), html, 'utf8');
   if (locaisJson) { fs.mkdirSync(path.join(PUBLIC_DIR, 'data'), { recursive: true }); fs.writeFileSync(path.join(PUBLIC_DIR, 'data', 'locais.json'), locaisJson); }
