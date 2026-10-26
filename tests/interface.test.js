@@ -112,11 +112,14 @@ test('link direto de municipio abre a gaveta e o botao compartilhar existe', asy
   await page.close();
 });
 
-test('presidente: 1o turno do MA, 2o turno aguardando e gaveta de municipio', async () => {
+test('presidente: 1o turno do MA e gaveta de municipio', async () => {
   const { page, erros } = await abrir('#presidente');
+  const apurado = await page.evaluate(() => PRES.T[2].apurado);
+  await page.evaluate(() => document.querySelector('#presTurn button[data-t="1"]').click());
+  await new Promise(r => setTimeout(r, 800));
   const card = await texto(page, '#presCands .pcand');
   assert.match(card, /Lula/); assert.match(card, /63,99%/); assert.match(card, /de 4\.010\.439 votos válidos/);
-  assert.match(await texto(page, '#presTurn'), /2º turno · aguardando/);
+  assert.match(await texto(page, '#presTurn'), apurado ? /^1º turno 2º turno$/ : /2º turno · aguardando/);
   await page.evaluate(() => openPres('08893'));
   await page.waitForSelector('#drawer.on h2');
   const g = await texto(page, '#drawer');
@@ -180,5 +183,27 @@ test('aviso de nova versao fica oculto na versao atual', async () => {
   assert.equal(await page.evaluate(() => document.querySelector('#updateBar').hidden), true);
   const v = await page.evaluate(async () => (await (await fetch('version.json', { cache: 'no-store' })).json()).id);
   assert.equal(v, await page.evaluate(() => BUILD_ID));
+  await page.close();
+});
+
+test('presidente: 2o turno (aguardando ou apurado, conforme os dados)', async () => {
+  const { page, erros } = await abrir('#presidente');
+  const apurado = await page.evaluate(() => PRES.T[2].apurado);
+  await page.evaluate(() => document.querySelector('#presTurn button[data-t="2"]').click());
+  await new Promise(r => setTimeout(r, 1200));
+  if (!apurado) {
+    assert.equal(await page.evaluate(() => getComputedStyle(document.querySelector('#presPending')).display !== 'none'), true);
+  } else {
+    const d = await page.evaluate(() => ({ cards: document.querySelectorAll('#presCands .pcand').length, heads: [...document.querySelectorAll('#presTbl thead th')].map(t => t.innerText), chips: document.querySelector('#presLead').innerText, nota: document.querySelector('#presNote').innerText, soma: PRES.cands.reduce((s, c) => s + c.v, 0), validos: PRES.ma.validos }));
+    assert.equal(d.cards, 2);
+    assert.ok(d.heads.some(h => /vs 1º t./i.test(h)), 'coluna de variacao sobre o 1o turno');
+    assert.match(d.chips, /Mudaram de líder/);
+    assert.match(d.nota, /2º turno/);
+    assert.equal(d.soma, d.validos, 'votos dos 2 candidatos devem somar os validos');
+    await page.evaluate(() => openPres('08893'));
+    await page.waitForSelector('#drawer.on h2');
+    assert.match(await texto(page, '#drawer'), /No 1º turno/);
+  }
+  assert.deepEqual(erros, []);
   await page.close();
 });
