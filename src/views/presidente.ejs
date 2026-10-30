@@ -1,9 +1,11 @@
 <section class="view" id="v-pres">
   <div class="toolbar">
+    <div class="seg" id="presScope"><button data-s="br" class="on">Brasil · por estado</button><button data-s="ma">Maranhão · por município</button></div>
     <div class="seg" id="presTurn"><button data-t="1" class="on">1º turno</button><button data-t="2">2º turno</button></div>
     <span id="presNote" style="font-size:13px;color:var(--tx2)"></span>
   </div>
 
+  <div id="presMa">
   <div class="grid g4" id="presKpis"></div>
 
   <div class="sec-title">Candidatos</div>
@@ -42,5 +44,27 @@
   </div>
   <div class="tbl-wrap"><table id="presTbl"><thead></thead><tbody></tbody></table></div>
   <div class="pager"><span id="presPinfo"></span><div id="presPbtn"></div></div>
+  </div>
+  </div>
+
+  <div id="presBr" style="display:none">
+    <div class="grid g4" id="brKpis"></div>
+    <div class="sec-title">Candidatos no Brasil</div>
+    <div class="grid g3" id="brCands"></div>
+    <div class="sec-title">Resultado por estado</div>
+    <div class="grid g-21">
+      <div class="card"><h3>Mapa dos estados</h3><p class="sub">Cor = candidato mais votado · intensidade = % dele no estado · toque para ver os detalhes</p><div class="tiles" id="brTiles"></div><div class="legend" id="brLegend"></div></div>
+      <div class="card"><h3>Estados vencidos</h3><p class="sub">Quantos estados cada candidato venceu (27 UFs)</p><div class="ch"><canvas id="brWon"></canvas></div><div style="margin-top:12px"><button class="btn pri" id="brGoMA">Ver os municípios do Maranhão</button></div></div>
+    </div>
+    <div class="card" style="margin-top:16px"><h3>% dos votos válidos por estado</h3><p class="sub">Os 3 maiores candidatos do país em cada estado, do maior ao menor % do primeiro</p><div class="ch" style="height:780px"><canvas id="brUF"></canvas></div></div>
+    <div class="sec-title">Estados</div>
+    <div class="toolbar">
+      <input class="input" id="brQ" placeholder="Filtrar estado…" style="min-width:200px">
+      <div class="chips" id="brLead"></div>
+      <span class="sp"></span>
+      <span id="brCount" style="font-size:13px;color:var(--tx2)"></span>
+      <button class="btn" id="brExp">⬇ Exportar CSV</button>
+    </div>
+    <div class="tbl-wrap"><table id="brTbl"><thead></thead><tbody></tbody></table></div>
   </div>
 </section>

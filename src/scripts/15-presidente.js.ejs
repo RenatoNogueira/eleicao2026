@@ -8,7 +8,7 @@ const pCol=i=>PCOL[PRES.cands[i].n]||'#94a3b8';
 const pName=c=>title(c.nu);
 const pMunName=code=>byCode[code]?title(byCode[code].name):code;
 const pLast=c=>pName(c).split(' ').slice(-1)[0];
-const PS={turn:1,mode:'lead',q:'',lead:'all',sort:'name',dir:1,page:0,per:15};
+const PS={scope:'br',turn:1,mode:'lead',q:'',lead:'all',sort:'name',dir:1,page:0,per:15};
 let pWins=[];
 
 /* 2o turno sem arquivo no TSE: usa os finalistas do 1o turno, sem votos */
@@ -47,6 +47,11 @@ function pCard(c,color,body,attr){
     <div class="dcand">${pAvatar(c,56)}<div><h3 style="font-size:16px">${pEsc(pName(c))}</h3><p class="sub" style="margin:2px 0 0">Nº ${c.n} · ${pEsc(c.sg)} · vice ${pEsc(title(c.vice))}</p></div></div>${body}</div>`;
 }
 function renderPres(){
+  $$('#presScope button').forEach(b=>b.classList.toggle('on',b.dataset.s===PS.scope));
+  $('#presMa').style.display=PS.scope==='ma'?'':'none';$('#presBr').style.display=PS.scope==='br'?'':'none';
+  $$('#presTurn button').forEach(b=>b.classList.toggle('on',+b.dataset.t===PS.turn));
+  const b2x=$('#presTurn button[data-t="2"]');if(b2x)b2x.textContent=PRES.T[2].apurado?'2º turno':'2º turno · aguardando';
+  if(PS.scope==='br'){renderPresBr();return}
   const g=PRES.ma;
   $$('#presTurn button').forEach(b=>b.classList.toggle('on',+b.dataset.t===PS.turn));
   const b2=$('#presTurn button[data-t="2"]');if(b2)b2.textContent=PRES.T[2].apurado?'2º turno':'2º turno · aguardando';
@@ -79,6 +84,7 @@ function renderPres(){
 }
 
 function renderPresCharts(){
+  if(PS.scope==='br'){renderPresBrCharts();return}
   if(PRES.pend)return;
   const O=baseOpts(),tx=css('--tx2'),ln=css('--line'),T=PRES.cands.slice(0,6);
   mk('pChBr',{type:'bar',data:{labels:T.map(c=>pName(c)),datasets:[{label:'Maranhão',data:T.map(c=>c.pc),backgroundColor:css('--a'),borderRadius:6},{label:'Brasil',data:T.map(c=>c.pbr),backgroundColor:css('--tx3'),borderRadius:6}]},

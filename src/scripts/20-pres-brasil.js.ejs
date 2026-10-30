@@ -1,0 +1,140 @@
+/* ---------- Presidente: Brasil geral e resultado por estado ---------- */
+/* grade de estados (coluna, linha), aproximando a posicao geografica */
+const UF_TILES={RR:[2,0],AP:[4,0],AM:[1,1],PA:[3,1],MA:[4,1],CE:[5,1],RN:[6,1],AC:[0,2],RO:[1,2],MT:[2,2],TO:[3,2],PI:[4,2],PE:[5,2],PB:[6,2],MS:[2,3],GO:[3,3],BA:[4,3],AL:[5,3],SE:[6,3],DF:[3,4],MG:[4,4],ES:[5,4],SP:[3,5],RJ:[4,5],PR:[3,6],SC:[3,7],RS:[3,8]};
+const BR={sort:'nome',dir:1,q:'',lead:'all',page:0};
+const brCol=n=>PCOL[n]||'#94a3b8';
+
+/* dados do turno em exibicao: candidatos nacionais e, por estado, lider, % e margem */
+function brData(){
+  const T=PRES.T[PS.turn];
+  if(!T||!T.nat||!T.ufs||!T.ufs.length)return null;
+  const N=T.nat.cands;
+  const rows=T.ufs.map(u=>{
+    const vv=u.validos;let b=0;u.v.forEach((x,i)=>{if(x>u.v[b])b=i});
+    const s=[...u.v].sort((a,c)=>c-a);
+    return {...u,lead:b,pl:vv?u.v[b]/vv*100:0,margin:vv?(s[0]-(s[1]||0))/vv*100:0,pc:u.v.map(x=>vv?x/vv*100:0),pab:u.aptos?u.abst/u.aptos*100:0};
+  });
+  return {T,N,g:T.nat.geral,rows,ufs27:rows.filter(r=>r.uf!=='zz')};
+}
+const brWins=D2=>D2.N.map((_,i)=>D2.ufs27.filter(r=>r.lead===i).length);
+
+function renderPresBr(){
+  const D2=brData();
+  const kp=$('#brKpis'),cd=$('#brCands');
+  if(!D2){
+    kp.innerHTML='';cd.innerHTML='<div class="card empty" style="grid-column:1/-1">Resultado nacional deste turno ainda não disponível.</div>';
+    $('#brTiles').innerHTML='';$('#brTbl tbody').innerHTML='';return;
+  }
+  const {T,N,g,rows,ufs27}=D2,wins=brWins(D2);
+  $('#presNote').textContent=`Brasil · ${T.turno||PS.turn}º turno · ${g.secoes?pc(g.apuradas/g.secoes*100,2):'—'} das seções apuradas (${fmt(g.apuradas)} de ${fmt(g.secoes)})`;
+  const k=[
+    ['a','Votos válidos',fmt(g.validos),`${g.comp?pc(g.validos/g.comp*100,2):'—'} dos comparecimentos`],
+    ['b','Comparecimento',pc(g.aptos?g.comp/g.aptos*100:0,2),`${fmt(g.comp)} de ${fmt(g.aptos)} eleitores`],
+    ['tx','Brancos · nulos',fmt(g.branco+g.nulo),`${fmt(g.branco)} brancos · ${fmt(g.nulo)} nulos`],
+    ['tx','Abstenção',pc(g.aptos?g.abst/g.aptos*100:0,2),`${fmt(g.abst)} eleitores`]];
+  kp.innerHTML=k.map(x=>`<div class="card kpi"><div class="lbl"><span class="dot" style="background:var(--${x[0]})"></span>${x[1]}</div><div class="val num">${x[2]}</div><div class="ft">${x[3]}</div></div>`).join('');
+  const maOf=n=>PRES.cands.find(c=>c.n===n);
+  cd.innerHTML=N.slice(0,6).map((c,i)=>{
+    const m=maOf(c.n),d=m?m.pc-c.pc:null;
+    return pCard(c,brCol(c.n),`<div class="stat" style="margin:14px 0 8px"><div style="grid-column:1/-1"><small>Brasil</small><b class="num">${pp(c.pc)}%</b><small style="display:block">${fmt(c.v)} de ${fmt(g.validos)} votos válidos</small></div></div>
+      <p class="sub" style="margin:0">Vence em <b>${wins[i]}</b> de ${ufs27.length} estados${m?` · no Maranhão: ${pp(m.pc)}% (${d>=0?'+':'−'}${pp(Math.abs(d))} p.p.)`:''}${c.e?' · <b>'+(PS.turn===2?'eleito':'vai ao 2º turno')+'</b>':''}</p>`);
+  }).join('');
+  /* mapa de estados (grade) */
+  const tiles=ufs27.map(r=>{
+    const pos=UF_TILES[r.uf.toUpperCase()];if(!pos)return '';
+    const c=N[r.lead],k2=Math.max(0,Math.min(1,(r.pl-35)/40));
+    return `<button class="tile" data-uf="${r.uf}" title="${pEsc(r.nome)}: ${pEsc(pName(c))} ${pp(r.pl)}%" style="grid-column:${pos[0]+1};grid-row:${pos[1]+1};background:color-mix(in srgb,${brCol(c.n)} ${Math.round(40+60*k2)}%,var(--bg2))"><b>${r.uf.toUpperCase()}</b><small>${pp(r.pl)}%</small></button>`;
+  }).join('');
+  $('#brTiles').innerHTML=tiles;
+  $('#brLegend').innerHTML=N.map((c,i)=>wins[i]?`<span style="display:inline-flex;align-items:center;gap:6px"><i style="width:10px;height:10px;border-radius:3px;background:${brCol(c.n)}"></i>${pEsc(pName(c))} (${wins[i]})</span>`:'').join('')+'<span style="color:var(--tx3);margin-left:6px">cor mais forte = maior % do líder no estado</span>';
+  renderPresBrTable();
+  renderPresBrCharts();
+}
+
+function renderPresBrCharts(){
+  const D2=brData();if(!D2||!$('#brUF'))return;
+  const {N,ufs27}=D2,O=baseOpts(),tx=css('--tx2'),ln=css('--line'),wins=brWins(D2);
+  const W=N.map((c,i)=>i).filter(i=>wins[i]>0);
+  mk('brWon',{type:'bar',data:{labels:W.map(i=>pName(N[i])),datasets:[{data:W.map(i=>wins[i]),backgroundColor:W.map(i=>brCol(N[i].n)),borderRadius:8}]},
+    options:{...O,plugins:{legend:{display:false},tooltip:{...O.plugins.tooltip,callbacks:{label:x=>` ${x.raw} estados`}}},scales:{x:{grid:{display:false},ticks:{color:tx},border:{display:false}},y:{beginAtZero:true,ticks:{color:tx,precision:0},grid:{color:ln},border:{display:false}}}}});
+  /* barras 100%: 3 maiores candidatos + outros, estados em ordem do % do 1o candidato nacional */
+  const top=N.slice(0,Math.min(3,N.length)),rows=[...ufs27].sort((a,b)=>b.pc[0]-a.pc[0]);
+  const ds=top.map((c,i)=>({label:pName(c),data:rows.map(r=>r.pc[i]),backgroundColor:brCol(c.n)}));
+  ds.push({label:'Outros, brancos e nulos',data:rows.map(r=>Math.max(0,100-top.reduce((s,_,i)=>s+r.pc[i],0))),backgroundColor:css('--tx3')});
+  mk('brUF',{type:'bar',data:{labels:rows.map(r=>r.nome),datasets:ds},
+    options:{...O,indexAxis:'y',plugins:{...O.plugins,tooltip:{...O.plugins.tooltip,callbacks:{label:x=>` ${x.dataset.label}: ${pp(x.raw)}%`}}},
+      scales:{x:{stacked:true,max:100,grid:{color:ln},ticks:{color:tx,callback:v=>v+'%'},border:{display:false}},y:{stacked:true,grid:{display:false},ticks:{color:tx,font:{size:11}},border:{display:false}}}}});
+}
+
+/* ----- tabela de estados ----- */
+function brCols(D2){
+  const a=D2.N[0],b=D2.N[1];
+  return [['nome','Estado'],['lead','Líder'],['pl','% líder','r'],['c0',pName(a),'r'],['c1',b?pName(b):'—','r'],['margin','Vantagem','r'],['validos','Votos válidos','r'],['pab','Abstenção','r']];
+}
+function brFiltered(D2){
+  const q=norm(BR.q);
+  const r=D2.rows.filter(u=>(!q||norm(u.nome).includes(q)||u.uf.includes(q))&&(BR.lead==='all'||u.lead===+BR.lead));
+  const k=BR.sort,val=(u)=>k==='lead'?pName(D2.N[u.lead]):k==='c0'?u.pc[0]:k==='c1'?u.pc[1]:u[k];
+  r.sort((x,y)=>{const u=val(x),v=val(y);return (typeof u==='string'?u.localeCompare(v,'pt-BR'):u-v)*BR.dir});
+  return r;
+}
+function renderPresBrTable(){
+  const D2=brData();if(!D2)return;
+  const cols=brCols(D2),wins=brWins(D2);
+  if(!$('#brLead').children.length||$('#brLead').dataset.t!==String(PS.turn)){
+    $('#brLead').dataset.t=PS.turn;BR.lead='all';
+    $('#brLead').innerHTML='<button class="chip on" data-f="all">Todos</button>'+D2.N.map((c,i)=>wins[i]?`<button class="chip" data-f="${i}">${pEsc(pLast(c))} (${wins[i]})</button>`:'').join('');
+  }
+  $('#brTbl thead').innerHTML='<tr>'+cols.map(c=>`<th data-k="${c[0]}" class="${c[2]||''} ${BR.sort===c[0]?'s':''}">${pEsc(c[1])}<span class="ar">${BR.dir>0?'▲':'▼'}</span></th>`).join('')+'</tr>';
+  const r=brFiltered(D2);
+  $('#brTbl tbody').innerHTML=r.length?r.map(u=>{
+    const c=D2.N[u.lead];
+    return `<tr data-uf="${u.uf}"><td class="cname"><b>${pEsc(u.nome)}</b> <small style="color:var(--tx3)">${u.uf.toUpperCase()}</small></td><td data-l="Líder">${pTag(c)} <b>${pEsc(pName(c))}</b></td><td class="r num" data-l="% líder">${pp(u.pl)}%</td><td class="r num" data-l="${pEsc(pName(D2.N[0]))}"><b>${fmt(u.v[0])}</b><small style="display:block;color:var(--tx3)">${pp(u.pc[0])}%</small></td><td class="r num" data-l="${pEsc(D2.N[1]?pName(D2.N[1]):'')}"><b>${fmt(u.v[1]||0)}</b><small style="display:block;color:var(--tx3)">${pp(u.pc[1]||0)}%</small></td><td class="r num" data-l="Vantagem">+${pp(u.margin)} p.p.</td><td class="r num" data-l="Votos válidos">${fmt(u.validos)}</td><td class="r num" data-l="Abstenção">${pp(u.pab)}%</td></tr>`}).join(''):`<tr><td colspan="${cols.length}" class="cempty"><div class="empty">Nenhum estado encontrado.</div></td></tr>`;
+  $('#brCount').textContent=`${r.length} de ${D2.rows.length} (27 estados e exterior)`;
+}
+
+/* ----- gaveta do estado ----- */
+function openPresUF(uf){
+  const D2=brData();if(!D2)return;
+  const u=D2.rows.find(x=>x.uf===uf);if(!u)return;
+  const {N,g}=D2,vv=u.validos;
+  const ord=N.map((_,i)=>i).sort((a,b)=>u.v[b]-u.v[a]);
+  const mx=Math.max(u.v[ord[0]],1),L=N[u.lead];
+  const stack=ord.filter(i=>u.v[i]>0).map(i=>`<i style="width:${vv?u.v[i]/vv*100:0}%;background:${brCol(N[i].n)}" title="${pEsc(pName(N[i]))}"></i>`).join('');
+  const rows=ord.map((i,k)=>{const sh=vv?u.v[i]/vv*100:0,d=sh-N[i].pc;
+    return `<li><span class="n">${String(k+1).padStart(2,'0')}</span><span><b>${pEsc(pName(N[i]))}</b> <span style="color:var(--tx3);font-size:12px">· ${pEsc(N[i].sg)}</span></span><span class="num">${fmt(u.v[i])}<small style="display:block;color:var(--tx3);font-size:11.5px;font-weight:500">de ${fmt(vv)} válidos · ${pp(sh)}% (${d>=0?'+':'−'}${pp(Math.abs(d))} p.p. vs Brasil)</small></span><span></span><div class="bg"><i style="width:${u.v[i]/mx*100}%;background:${brCol(N[i].n)}"></i></div></li>`}).join('');
+  $('#drawer').innerHTML=`<button class="icon-btn x" onclick="closeDrawer()" aria-label="Fechar">✕</button>
+   <span class="tag mut">Presidente · ${PS.turn}º turno</span>
+   <h2 style="margin-top:12px">${pEsc(u.nome)}</h2><p style="color:var(--tx2);font-size:13px">${pEsc(pName(L))} lidera com ${pp(u.pl)}% (+${pp(u.margin)} p.p. sobre o 2º)</p>
+   <div class="bar" style="margin-top:16px;height:12px;display:flex">${stack}</div>
+   <div class="stat">
+     <div><small>Votos válidos</small><b class="num">${fmt(vv)}</b></div><div><small>Comparecimento</small><b class="num">${u.aptos?pc(u.comp/u.aptos*100,2):'—'}</b><small style="display:block">${fmt(u.comp)} de ${fmt(u.aptos)}</small></div>
+     <div><small>Brancos</small><b class="num">${fmt(u.branco)}</b></div><div><small>Nulos</small><b class="num">${fmt(u.nulo)}</b></div>
+     <div><small>Eleitorado apto</small><b class="num">${fmt(u.aptos)}</b></div><div><small>Abstenção</small><b class="num">${fmt(u.abst)}</b><small style="display:block">${pc(u.pab,2)} do eleitorado</small></div>
+   </div>
+   <p class="sub" style="margin:0 0 6px;font-weight:700;color:var(--tx)">Votação por candidato</p>
+   <ul class="rank">${rows}</ul>
+   <p class="sub" style="margin-top:12px">Seções apuradas: ${fmt(u.apuradas)} de ${fmt(u.secoes)}.</p>
+   ${uf==='ma'?`<div style="margin-top:14px"><button class="btn pri" onclick="closeDrawer();presGoMA()">Ver os municípios do Maranhão</button></div>`:''}`;
+  $('#drawer').classList.add('on');$('#scrim').classList.add('on');$('#drawer').setAttribute('aria-hidden','false');
+}
+function presGoMA(){PS.scope='ma';renderPres()}
+
+/* ----- eventos ----- */
+$('#presScope').onclick=e=>{const b=e.target.closest('button');if(!b)return;PS.scope=b.dataset.s;renderPres()};
+$('#presBr').addEventListener('click',e=>{
+  const uf=e.target.closest('[data-uf]');if(uf){openPresUF(uf.dataset.uf);return}
+  const th=e.target.closest('#brTbl th');
+  if(th){const k=th.dataset.k;BR.dir=BR.sort===k?-BR.dir:(k==='nome'||k==='lead'?1:-1);BR.sort=k;renderPresBrTable();return}
+  const ch=e.target.closest('#brLead .chip');
+  if(ch){BR.lead=ch.dataset.f;$$('#brLead .chip').forEach(c=>c.classList.toggle('on',c===ch));renderPresBrTable();return}
+  if(e.target.closest('#brGoMA'))presGoMA();
+});
+$('#brQ').oninput=e=>{BR.q=e.target.value;renderPresBrTable()};
+$('#brExp').onclick=()=>{
+  const D2=brData();if(!D2)return;
+  const r=brFiltered(D2),N=D2.N;
+  const h=['uf','estado','votos_validos','lider','pct_lider','vantagem_pp','comparecimento','abstencao','brancos','nulos'].concat(N.map(c=>c.nu+' (votos)'),N.map(c=>c.nu+' (%)'));
+  const csv=[h.join(';'),...r.map(u=>[u.uf.toUpperCase(),u.nome,u.validos,N[u.lead].nu,u.pl.toFixed(2).replace('.',','),u.margin.toFixed(2).replace('.',','),u.comp,u.abst,u.branco,u.nulo].concat(u.v,u.pc.map(x=>x.toFixed(2).replace('.',','))).join(';'))].join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv'}));a.download=`presidente_${PS.turn}turno_estados.csv`;a.click();
+};

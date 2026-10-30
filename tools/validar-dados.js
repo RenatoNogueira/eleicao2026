@@ -140,6 +140,15 @@ function validar({ silencioso = false } = {}) {
     const ruim = T.cands.filter((c, i) => somaC[i] !== c.v);
     exige(!ruim.length, `presidente.${t}: ${ruim.length} candidatos com soma dos municipios != estado`);
     if (T.apurado) exige(T.vv.reduce((s, v) => s + v, 0) === T.ma.validos, `presidente.${t}: validos dos municipios != estado`);
+    // Brasil por estado: 27 UFs + exterior somam o total nacional; Maranhao igual ao detalhe por municipio
+    if (T.nat && T.ufs) {
+      exige(T.ufs.length === 28, `presidente.${t}: esperados 27 estados + exterior, ha ${T.ufs.length} (rode npm run dados:presidente)`);
+      exige(T.ufs.reduce((s, u) => s + u.validos, 0) === T.nat.geral.validos, `presidente.${t}: soma dos estados != votos validos do Brasil`);
+      const dv = T.nat.cands.filter((c, i) => T.ufs.reduce((s, u) => s + u.v[i], 0) !== c.v);
+      exige(!dv.length, `presidente.${t}: ${dv.length} candidatos com soma dos estados != total nacional`);
+      const ma = T.ufs.find(u => u.uf === 'ma');
+      exige(ma && ma.validos === T.ma.validos, `presidente.${t}: Maranhao nos estados != detalhe por municipio`);
+    } else if (T.apurado) erro(`presidente.${t}: faltam os dados por estado (rode npm run dados:presidente)`);
   }
   bom('presidente confere (soma dos municipios = estado)');
 

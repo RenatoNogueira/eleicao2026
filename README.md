@@ -175,3 +175,9 @@ O CI roda esses testes em cada push (job `interface`).
 
 `site.config.json` guarda o ID do Google Analytics (`gaId`). A variável `GA_ID` sobrescreve (vazia desativa) e o formato
 é validado no build. O endereço público vem de `SITE_URL` ou das variáveis do Vercel.
+
+### Presidente: Brasil por estado
+
+A aba abre no **Brasil** (resultado nacional, mapa de estados em grade, gráfico por estado e tabela das 27 UFs + exterior,
+com gaveta de cada estado) e alterna para **Maranhão · por município**. `npm run dados:presidente` baixa o nacional, os 28
+arquivos de UF e os 217 municípios do MA nos dois turnos; o validador confere que os estados somam o Brasil.

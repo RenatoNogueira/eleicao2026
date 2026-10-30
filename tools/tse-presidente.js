@@ -12,6 +12,12 @@ const UF = process.env.UF || 'ma';
 const CARGO = 'c0001';
 const HOST = 'https://resultados.tse.jus.br/oficial';
 
+// Estados (e exterior) para o resultado nacional por UF
+const UFS = { ac: 'Acre', al: 'Alagoas', ap: 'Amapá', am: 'Amazonas', ba: 'Bahia', ce: 'Ceará', df: 'Distrito Federal', es: 'Espírito Santo', go: 'Goiás',
+  ma: 'Maranhão', mt: 'Mato Grosso', ms: 'Mato Grosso do Sul', mg: 'Minas Gerais', pa: 'Pará', pb: 'Paraíba', pr: 'Paraná', pe: 'Pernambuco', pi: 'Piauí',
+  rj: 'Rio de Janeiro', rn: 'Rio Grande do Norte', rs: 'Rio Grande do Sul', ro: 'Rondônia', rr: 'Roraima', sc: 'Santa Catarina', sp: 'São Paulo',
+  se: 'Sergipe', to: 'Tocantins', zz: 'Exterior' };
+
 const num = v => (v === undefined || v === '' || v === null ? 0 : parseInt(v, 10) || 0);
 const flt = v => parseFloat(String(v ?? '0').replace(',', '.')) || 0;
 
@@ -82,8 +88,18 @@ async function turno(ele, mun) {
     const g = geral(m);
     mm.vv[mi] = g.validos; mm.branco[mi] = g.branco; mm.nulo[mi] = g.nulo; mm.aptos[mi] = g.aptos; mm.comp[mi] = g.comp;
   });
+  // Brasil: candidatos na ordem nacional e resultado de cada estado (votos alinhados a essa ordem)
+  const nat = cands(br).sort((a, b) => b.v - a.v);
+  const ufs = (await pool(Object.keys(UFS), 6, async uf => {
+    const j = uf === UF ? st : await get(`${base}/${uf}/${uf}-${CARGO}-e00${ele}-u.jws`);
+    if (!j) return null;
+    const vv = Object.fromEntries(cands(j).map(c => [c.n, c.v]));
+    return { uf, nome: UFS[uf], ...geral(j), v: nat.map(c => vv[c.n] || 0) };
+  })).filter(Boolean);
   const ma = geral(st);
   return {
+    nat: { geral: geral(br), cands: nat.map(c => ({ id: c.id, n: c.n, nu: c.nu, sg: c.sg, v: c.v, pc: c.pc, e: c.e, st: c.st, vice: c.vice })) },
+    ufs,
     turno: num(st.t), eleicao: ele, atualizado: `${st.dt} ${st.ht}`.trim(), apurado: ma.validos > 0,
     ma, br: geral(br),
     cands: cst.map(c => ({ ...c, vbr: cbr[c.n] ? cbr[c.n].v : 0, pbr: cbr[c.n] ? cbr[c.n].pc : 0, ebr: cbr[c.n] ? cbr[c.n].e : 0 })),

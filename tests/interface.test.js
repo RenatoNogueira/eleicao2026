@@ -114,6 +114,8 @@ test('link direto de municipio abre a gaveta e o botao compartilhar existe', asy
 
 test('presidente: 1o turno do MA e gaveta de municipio', async () => {
   const { page, erros } = await abrir('#presidente');
+  await page.evaluate(() => document.querySelector('#presScope button[data-s="ma"]').click());
+  await new Promise(r => setTimeout(r, 600));
   const apurado = await page.evaluate(() => PRES.T[2].apurado);
   await page.evaluate(() => document.querySelector('#presTurn button[data-t="1"]').click());
   await new Promise(r => setTimeout(r, 800));
@@ -188,6 +190,8 @@ test('aviso de nova versao fica oculto na versao atual', async () => {
 
 test('presidente: 2o turno (aguardando ou apurado, conforme os dados)', async () => {
   const { page, erros } = await abrir('#presidente');
+  await page.evaluate(() => document.querySelector('#presScope button[data-s="ma"]').click());
+  await new Promise(r => setTimeout(r, 600));
   const apurado = await page.evaluate(() => PRES.T[2].apurado);
   await page.evaluate(() => document.querySelector('#presTurn button[data-t="2"]').click());
   await new Promise(r => setTimeout(r, 1200));
@@ -204,6 +208,41 @@ test('presidente: 2o turno (aguardando ou apurado, conforme os dados)', async ()
     await page.waitForSelector('#drawer.on h2');
     assert.match(await texto(page, '#drawer'), /No 1º turno/);
   }
+  assert.deepEqual(erros, []);
+  await page.close();
+});
+
+test('presidente Brasil: resultado geral e por estado', async () => {
+  const { page, erros } = await abrir('#presidente');
+  assert.equal(await page.evaluate(() => PS.scope), 'br', 'a aba abre no Brasil');
+  const d = await page.evaluate(() => {
+    const T = PRES.T[PS.turn];
+    return { turno: PS.turn, tiles: document.querySelectorAll('#brTiles .tile').length, linhas: document.querySelectorAll('#brTbl tbody tr').length,
+      validos: T.nat.geral.validos, somaUF: T.ufs.reduce((s, u) => s + u.validos, 0), kpi: document.querySelector('#brKpis').innerText.replace(/\s+/g, ' '),
+      cards: document.querySelector('#brCands').innerText.replace(/\s+/g, ' '), graf: !!Chart.getChart('brWon') && !!Chart.getChart('brUF') };
+  });
+  assert.equal(d.tiles, 27); assert.equal(d.linhas, 28); assert.equal(d.somaUF, d.validos, 'estados devem somar o Brasil');
+  assert.match(d.kpi, /Votos válidos/); assert.match(d.kpi, /Abstenção/);
+  assert.match(d.cards, /Lula/); assert.match(d.cards, /Flavio Bolsonaro/); assert.ok(d.graf);
+  await page.evaluate(() => document.querySelector('#brTiles .tile[data-uf="sp"]').click());
+  await page.waitForSelector('#drawer.on h2');
+  const g = await texto(page, '#drawer');
+  assert.match(g, /São Paulo/); assert.match(g, /vs Brasil/); assert.match(g, /Abstenção/);
+  await page.evaluate(() => closeDrawer());
+  // do Brasil para o Maranhao e de volta
+  await page.evaluate(() => document.querySelector('#presScope button[data-s="ma"]').click());
+  await page.waitForFunction(() => getComputedStyle(document.querySelector('#presMa')).display !== 'none');
+  assert.deepEqual(erros, []);
+  await page.close();
+});
+
+test('presidente Brasil no celular: sem rolagem horizontal e com o mapa de estados', async () => {
+  const { page, erros } = await abrir('#presidente', { width: 390, height: 844, isMobile: true, hasTouch: true });
+  assert.equal(await page.evaluate(() => PS.scope), 'br');
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), true, 'rolagem horizontal no mobile');
+  assert.equal(await page.$$eval('#brTiles .tile', t => t.length), 27);
+  const larg = await page.evaluate(() => { const r = document.querySelector('#brTiles').getBoundingClientRect(); return r.width <= window.innerWidth; });
+  assert.equal(larg, true, 'mapa de estados dentro da tela');
   assert.deepEqual(erros, []);
   await page.close();
 });

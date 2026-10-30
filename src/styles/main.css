@@ -399,3 +399,10 @@ html.no-scroll,html.no-scroll body{overflow:hidden}
 .update-bar{position:fixed;left:50%;top:14px;transform:translateX(-50%);z-index:90;display:flex;align-items:center;gap:12px;padding:10px 12px 10px 16px;border-radius:14px;background:var(--card-solid);border:1px solid var(--a);box-shadow:var(--shadow);font-size:13px;font-weight:600;max-width:calc(100vw - 24px)}
 .update-bar[hidden]{display:none}
 @media(max-width:700px){.update-bar{top:auto;bottom:calc(88px + env(safe-area-inset-bottom))}}
+
+/* mapa de estados em grade (Presidente, Brasil) */
+.tiles{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;max-width:560px;margin:6px auto 0}
+.tile{aspect-ratio:1;border:0;border-radius:10px;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;cursor:pointer;line-height:1.1;transition:transform .15s,filter .15s}
+.tile:hover{transform:translateY(-2px);filter:brightness(1.15)}
+.tile b{font-size:13px}.tile small{font-size:10px;opacity:.9}
+@media(max-width:700px){.tiles{gap:4px}.tile b{font-size:11px}.tile small{font-size:9px}}
